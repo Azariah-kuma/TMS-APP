@@ -1,0 +1,213 @@
+@if (loading()) {
+  <p class="muted">読み込み中…</p>
+} @else if (employee(); as e) {
+  <div class="page-header">
+    <h1>{{ e.name }}</h1>
+    <span class="badge" [class.badge-accent]="e.role === 'hr'">
+      {{ e.role === 'hr' ? '人事' : '一般社員' }}
+    </span>
+  </div>
+
+  <div class="panel">
+    <table class="table">
+      <tbody>
+        <tr>
+          <th style="width: 160px">従業員コード</th>
+          <td>{{ e.employee_code }}</td>
+        </tr>
+        <tr>
+          <th>メールアドレス</th>
+          <td>{{ e.email }}</td>
+        </tr>
+        <tr>
+          <th>入社日</th>
+          <td>{{ e.hired_at }}</td>
+        </tr>
+        <tr>
+          <th>現在の部署</th>
+          <td>{{ e.current_assignment?.department_name ?? '—' }}</td>
+        </tr>
+        <tr>
+          <th>現在の役職</th>
+          <td>{{ e.current_assignment?.position_name ?? '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="page-header" style="margin-bottom: 8px; padding-bottom: 8px">
+      <h2>異動履歴</h2>
+      @if (isHr()) {
+        <button type="button" class="btn btn-small" (click)="showTransferForm.set(!showTransferForm())">
+          {{ showTransferForm() ? '閉じる' : '異動を登録' }}
+        </button>
+      }
+    </div>
+
+    @if (showTransferForm()) {
+      <form [formGroup]="transferForm" (ngSubmit)="submitTransfer()" style="margin-bottom: 16px">
+        <div class="field">
+          <label for="t-department">部署</label>
+          <select id="t-department" class="input" formControlName="department_id">
+            <option [value]="0">選択してください</option>
+            @for (department of departments(); track department.id) {
+              <option [value]="department.id">{{ department.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="t-position">役職</label>
+          <select id="t-position" class="input" formControlName="position_id">
+            <option [value]="0">選択してください</option>
+            @for (position of positions(); track position.id) {
+              <option [value]="position.id">{{ position.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="t-manager">上司（任意）</label>
+          <select id="t-manager" class="input" formControlName="manager_id">
+            <option value="">なし</option>
+            @for (colleague of colleagues(); track colleague.id) {
+              <option [value]="colleague.id">{{ colleague.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="t-started">異動日</label>
+          <input
+            id="t-started"
+            class="input"
+            type="date"
+            formControlName="started_at"
+            style="max-width: 200px"
+          />
+        </div>
+        @if (transferError()) {
+          <p class="alert">{{ transferError() }}</p>
+        }
+        <button type="submit" class="btn btn-primary" [disabled]="transferForm.invalid || transferSubmitting()">
+          登録する
+        </button>
+      </form>
+    }
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>部署</th>
+          <th>役職</th>
+          <th>開始日</th>
+          <th>終了日</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (assignment of assignments(); track assignment.id) {
+          <tr>
+            <td>{{ assignment.department_name }}</td>
+            <td>{{ assignment.position_name }}</td>
+            <td>{{ assignment.started_at }}</td>
+            <td>
+              @if (assignment.is_active) {
+                <span class="badge badge-success">現在</span>
+              } @else {
+                {{ assignment.ended_at }}
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (isHr()) {
+    <div class="panel">
+      <div class="page-header" style="margin-bottom: 8px; padding-bottom: 8px">
+        <h2>上司権限の委任</h2>
+        <button type="button" class="btn btn-small" (click)="showDelegationForm.set(!showDelegationForm())">
+          {{ showDelegationForm() ? '閉じる' : '委任を登録' }}
+        </button>
+      </div>
+
+      @if (showDelegationForm()) {
+        <form [formGroup]="delegationForm" (ngSubmit)="submitDelegation()" style="margin-bottom: 16px">
+          <div class="field">
+            <label for="d-delegate">代理者</label>
+            <select id="d-delegate" class="input" formControlName="delegate_id">
+              <option [value]="0">選択してください</option>
+              @for (colleague of colleagues(); track colleague.id) {
+                <option [value]="colleague.id">{{ colleague.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="d-started">開始日</label>
+            <input
+              id="d-started"
+              class="input"
+              type="date"
+              formControlName="started_at"
+              style="max-width: 200px"
+            />
+          </div>
+          <div class="field">
+            <label for="d-ended">終了日（任意）</label>
+            <input
+              id="d-ended"
+              class="input"
+              type="date"
+              formControlName="ended_at"
+              style="max-width: 200px"
+            />
+          </div>
+          @if (delegationError()) {
+            <p class="alert">{{ delegationError() }}</p>
+          }
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="delegationForm.invalid || delegationSubmitting()"
+          >
+            登録する
+          </button>
+        </form>
+      }
+
+      @if (delegations().length === 0) {
+        <p class="muted">委任はありません。</p>
+      } @else {
+        <table class="table">
+          <thead>
+            <tr>
+              <th>代理者</th>
+              <th>開始日</th>
+              <th>終了日</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (delegation of delegations(); track delegation.id) {
+              <tr>
+                <td>{{ delegation.delegate_name }}</td>
+                <td>{{ delegation.started_at }}</td>
+                <td>{{ delegation.ended_at ?? '—' }}</td>
+                <td>
+                  @if (delegation.is_active) {
+                    <button type="button" class="btn btn-small btn-danger" (click)="revokeDelegation(delegation.id)">
+                      取り消す
+                    </button>
+                  } @else {
+                    <span class="muted">終了済み</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+} @else {
+  <p class="muted">従業員が見つかりません。</p>
+}

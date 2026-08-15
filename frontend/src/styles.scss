@@ -1,0 +1,254 @@
+/*
+ * グローバルスタイル。
+ *
+ * 方針: 角丸なし・影なし・グラデーションなし。装飾を極力削ぎ落とした、
+ * 業務ツールらしい実用本位のデザインにする。
+ */
+
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f4;
+  --color-border: #d4d4d2;
+  --color-border-strong: #1a1a1a;
+  --color-text: #1a1a1a;
+  --color-text-muted: #62615c;
+  --color-accent: #1a4d8f;
+  --color-accent-text: #ffffff;
+  --color-danger: #a3271e;
+  --color-danger-bg: #fbeceb;
+  --color-success: #1f6f43;
+  --color-success-bg: #ecf5ef;
+
+  --font-sans:
+    -apple-system, 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+
+  --border-width: 1px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  margin: 0 0 var(--space-3);
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 20px;
+}
+h2 {
+  font-size: 16px;
+}
+h3 {
+  font-size: 14px;
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+a {
+  color: var(--color-accent);
+}
+
+/* すべての角丸を明示的に無効化する（コンポーネント側で個別指定させない） */
+* {
+  border-radius: 0 !important;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* ---------------------------------------------------------------------- */
+/* 共通ユーティリティ                                                      */
+/* ---------------------------------------------------------------------- */
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-3) var(--space-5);
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border-strong);
+  padding-bottom: var(--space-2);
+}
+
+.panel {
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-bg);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+.field label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.input,
+select.input,
+textarea.input {
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-bg);
+  padding: var(--space-2);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+}
+
+.btn {
+  display: inline-block;
+  border: var(--border-width) solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.btn-danger {
+  background: var(--color-bg);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.btn-small {
+  padding: 2px var(--space-2);
+  font-size: 12px;
+}
+
+.table th,
+.table td {
+  border-bottom: var(--border-width) solid var(--color-border);
+  padding: var(--space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  border-bottom-width: 2px;
+  border-bottom-color: var(--color-border-strong);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface);
+}
+
+.badge {
+  display: inline-block;
+  border: var(--border-width) solid var(--color-border-strong);
+  padding: 1px var(--space-2);
+  font-size: 11px;
+}
+
+.badge-accent {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.badge-success {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.badge-muted {
+  color: var(--color-text-muted);
+}
+
+.alert {
+  border: var(--border-width) solid var(--color-danger);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.progress-track {
+  border: var(--border-width) solid var(--color-border-strong);
+  height: 10px;
+  background: var(--color-bg);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}

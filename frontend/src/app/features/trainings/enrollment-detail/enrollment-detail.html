@@ -1,0 +1,74 @@
+@if (loading()) {
+  <p class="muted">読み込み中…</p>
+} @else if (enrollment(); as e) {
+  <div class="page-header">
+    <h1>{{ e.training?.title }}</h1>
+    <span
+      class="badge"
+      [class.badge-success]="e.status === 'completed'"
+      [class.badge-accent]="e.status === 'in_progress'"
+    >
+      {{ statusLabel(e.status) }}
+    </span>
+  </div>
+
+  @if (e.training?.description) {
+    <p class="muted">{{ e.training?.description }}</p>
+  }
+
+  <div class="panel">
+    <h2>進捗: {{ e.progress }}%</h2>
+    <app-progress-bar [value]="e.progress" />
+  </div>
+
+  @if (hasLessons()) {
+    <div class="panel">
+      <h2>Lesson</h2>
+      <table class="table">
+        <tbody>
+          @for (lesson of e.training?.lessons; track lesson.id) {
+            <tr>
+              <td style="width: 32px">
+                <input
+                  type="checkbox"
+                  [checked]="isLessonCompleted(lesson.id)"
+                  [disabled]="!canEdit() || savingLessonId() === lesson.id"
+                  (change)="toggleLesson(lesson.id)"
+                />
+              </td>
+              <td>{{ lesson.title }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (!canEdit()) {
+        <p class="muted">部下の進捗は参照のみ可能です。</p>
+      }
+    </div>
+  } @else {
+    <div class="panel">
+      <h2>進捗の更新</h2>
+      @if (canEdit()) {
+        <div class="field">
+          <label for="manual-progress">進捗率（0〜100）</label>
+          <input
+            id="manual-progress"
+            class="input"
+            type="number"
+            min="0"
+            max="100"
+            [(ngModel)]="manualProgress"
+            style="max-width: 120px"
+          />
+        </div>
+        <button type="button" class="btn btn-primary" [disabled]="savingProgress()" (click)="submitManualProgress()">
+          更新する
+        </button>
+      } @else {
+        <p class="muted">部下の進捗は参照のみ可能です。</p>
+      }
+    </div>
+  }
+} @else {
+  <p class="muted">受講記録が見つかりません。</p>
+}

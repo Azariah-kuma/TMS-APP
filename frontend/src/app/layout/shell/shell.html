@@ -1,0 +1,26 @@
+<header class="shell-header">
+  <nav class="shell-nav">
+    <span class="shell-brand">人事・研修管理</span>
+    <a routerLink="/dashboard" routerLinkActive="is-active">ダッシュボード</a>
+    <a routerLink="/trainings" routerLinkActive="is-active">研修</a>
+    @if (isHr()) {
+      <a routerLink="/employees" routerLinkActive="is-active">従業員</a>
+    }
+  </nav>
+
+  <div class="shell-user">
+    @if (employee(); as e) {
+      <span class="muted">{{ user()?.name }}</span>
+      <span class="badge" [class.badge-accent]="e.role === 'hr'">
+        {{ e.role === 'hr' ? '人事' : '一般社員' }}
+      </span>
+    } @else {
+      <span class="muted">{{ user()?.name }}</span>
+    }
+    <button type="button" class="btn btn-small" (click)="logout()">ログアウト</button>
+  </div>
+</header>
+
+<main class="page">
+  <router-outlet />
+</main>

@@ -1,0 +1,67 @@
+@if (loading()) {
+  <p class="muted">読み込み中…</p>
+} @else if (training(); as t) {
+  <div class="page-header">
+    <h1>{{ t.title }}</h1>
+  </div>
+
+  @if (t.description) {
+    <p>{{ t.description }}</p>
+  }
+  @if (t.category) {
+    <span class="badge badge-muted">{{ t.category }}</span>
+  }
+
+  <div class="panel">
+    <h2>Lesson</h2>
+    @if (!t.lessons || t.lessons.length === 0) {
+      <p class="muted">Lessonはまだ登録されていません。</p>
+    } @else {
+      <table class="table">
+        <tbody>
+          @for (lesson of t.lessons; track lesson.id) {
+            <tr>
+              <td>{{ lesson.title }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @if (isHr()) {
+      <form [formGroup]="lessonForm" (ngSubmit)="addLesson()" class="actions" style="margin-top: 16px">
+        <input class="input" type="text" formControlName="title" placeholder="Lesson名" />
+        <button type="submit" class="btn" [disabled]="lessonForm.invalid || lessonSubmitting()">追加</button>
+      </form>
+    }
+  </div>
+
+  @if (isHr()) {
+    <div class="panel">
+      <h2>従業員に割り当てる</h2>
+      <form [formGroup]="enrollForm" (ngSubmit)="enrollEmployee()">
+        <div class="field">
+          <label for="employee">従業員</label>
+          <select id="employee" class="input" formControlName="employee_id">
+            <option [value]="0">選択してください</option>
+            @for (employee of employees(); track employee.id) {
+              <option [value]="employee.id">{{ employee.name }}（{{ employee.employee_code }}）</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="due_at">期限（任意）</label>
+          <input id="due_at" class="input" type="date" formControlName="due_at" style="max-width: 200px" />
+        </div>
+        @if (enrollMessage()) {
+          <p class="muted">{{ enrollMessage() }}</p>
+        }
+        <button type="submit" class="btn btn-primary" [disabled]="enrollForm.invalid || enrollSubmitting()">
+          割り当てる
+        </button>
+      </form>
+    </div>
+  }
+} @else {
+  <p class="muted">研修が見つかりません。</p>
+}

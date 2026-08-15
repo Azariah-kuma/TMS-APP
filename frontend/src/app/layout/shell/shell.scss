@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-border-strong);
+}
+
+.shell-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.shell-brand {
+  font-weight: 600;
+  margin-right: var(--space-2);
+}
+
+.shell-nav a {
+  color: var(--color-text);
+  text-decoration: none;
+  padding: var(--space-1) 0;
+  border-bottom: 2px solid transparent;
+}
+
+.shell-nav a:hover {
+  color: var(--color-accent);
+}
+
+.shell-nav a.is-active {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.shell-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
