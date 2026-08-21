@@ -30,4 +30,18 @@ final class UserTest extends TestCase
 
         $response->assertUnauthorized();
     }
+
+    /** 部署・役職・is_managerが、ログイン直後だけでなくリロード後の取得でも欠けない */
+    public function test_profile_includes_department_position_and_manager_status(): void
+    {
+        $manager = createEmployeeWithAssignment();
+        createEmployeeWithAssignment(assignmentAttributes: ['manager_id' => $manager->id]);
+
+        $response = $this->actingAs($manager->user)->getJson('/api/user');
+
+        $response->assertOk()
+            ->assertJsonPath('employee.current_assignment.department_name', $manager->currentAssignment->department->name)
+            ->assertJsonPath('employee.current_assignment.position_name', $manager->currentAssignment->position->name)
+            ->assertJsonPath('employee.is_manager', true);
+    }
 }

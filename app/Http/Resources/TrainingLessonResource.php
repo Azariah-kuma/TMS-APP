@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Models\TrainingLesson;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 /*
  * TrainingLesson(研修Lesson)のリソースクラス
@@ -25,6 +26,9 @@ final class TrainingLessonResource extends JsonResource
             'training_id' => $this->training_id,
             'title' => $this->title,
             'position' => $this->position,
+            'content_url' => $this->content_path ? Storage::disk('public')->url($this->content_path) : null,
+            'content_original_name' => $this->content_original_name,
+            'content_mime_type' => $this->content_mime_type,
         ];
     }
 }

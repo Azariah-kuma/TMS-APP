@@ -12,6 +12,12 @@
     <span class="badge badge-muted">{{ t.category }}</span>
   }
 
+  @if (myEnrollment(); as enrollment) {
+    <div style="margin-top: 12px">
+      <a class="btn btn-primary" [routerLink]="['/enrollments', enrollment.id]">進捗を入力する</a>
+    </div>
+  }
+
   <div class="panel">
     <h2>Lesson</h2>
     @if (!t.lessons || t.lessons.length === 0) {
@@ -21,7 +27,22 @@
         <tbody>
           @for (lesson of t.lessons; track lesson.id) {
             <tr>
-              <td>{{ lesson.title }}</td>
+              <td>
+                {{ lesson.title }}
+                @if (lesson.content_url; as url) {
+                  <div style="margin-top: 4px">
+                    @if (lesson.content_mime_type?.startsWith('video/')) {
+                      <video [src]="url" controls style="max-width: 320px; display: block"></video>
+                    } @else {
+                      <a [href]="url" target="_blank" rel="noopener">
+                        {{ lesson.content_original_name ?? '教材を開く' }}
+                      </a>
+                    }
+                  </div>
+                } @else {
+                  <span class="muted" style="margin-left: 8px">（教材未添付）</span>
+                }
+              </td>
             </tr>
           }
         </tbody>
@@ -29,36 +50,90 @@
     }
 
     @if (isHr()) {
-      <form [formGroup]="lessonForm" (ngSubmit)="addLesson()" class="actions" style="margin-top: 16px">
-        <input class="input" type="text" formControlName="title" placeholder="Lesson名" />
-        <button type="submit" class="btn" [disabled]="lessonForm.invalid || lessonSubmitting()">追加</button>
+      <form [formGroup]="lessonForm" (ngSubmit)="addLesson()" style="margin-top: 16px">
+        <div class="actions">
+          <input class="input" type="text" formControlName="title" placeholder="Lesson名" />
+          <input
+            class="input"
+            type="file"
+            accept="video/*,.pdf,.ppt,.pptx,.doc,.docx,image/*"
+            (change)="onLessonContentSelected($event)"
+          />
+          <button type="submit" class="btn" [disabled]="lessonForm.invalid || lessonSubmitting()">追加</button>
+        </div>
+        <p class="field-hint">教材ファイル（動画・PDF・スライド等、任意、最大100MB）を添付できます。</p>
+        @if (lessonError()) {
+          <p class="field-error">{{ lessonError() }}</p>
+        }
       </form>
     }
   </div>
 
   @if (isHr()) {
     <div class="panel">
-      <h2>従業員に割り当てる</h2>
+      <h2>受講登録</h2>
       <form [formGroup]="enrollForm" (ngSubmit)="enrollEmployee()">
         <div class="field">
-          <label for="employee">従業員</label>
-          <select id="employee" class="input" formControlName="employee_id">
-            <option [value]="0">選択してください</option>
-            @for (employee of employees(); track employee.id) {
-              <option [value]="employee.id">{{ employee.name }}（{{ employee.employee_code }}）</option>
-            }
+          <label for="scope">対象</label>
+          <select id="scope" class="input" formControlName="scope" style="max-width: 200px">
+            <option value="individual">従業員を個別に指定</option>
+            <option value="department">部署ごと（一括）</option>
+            <option value="company">全社一括</option>
           </select>
         </div>
+
+        @if (enrollForm.value.scope === 'individual') {
+          <div class="field">
+            <label for="employee">従業員</label>
+            <select id="employee" class="input" formControlName="employee_id">
+              <option [value]="0">選択してください</option>
+              @for (employee of employees(); track employee.id) {
+                <option [value]="employee.id">{{ employee.name }}（{{ employee.employee_code }}）</option>
+              }
+            </select>
+          </div>
+        } @else if (enrollForm.value.scope === 'department') {
+          <div class="field">
+            <label for="department">部署</label>
+            <select id="department" class="input" formControlName="department_id">
+              <option [value]="0">選択してください</option>
+              @for (department of departments(); track department.id) {
+                <option [value]="department.id">{{ department.name }}</option>
+              }
+            </select>
+          </div>
+        } @else {
+          <p class="field-hint">在籍中の全従業員（退職者を除く）が対象になります。</p>
+        }
+
         <div class="field">
           <label for="due_at">期限（任意）</label>
           <input id="due_at" class="input" type="date" formControlName="due_at" style="max-width: 200px" />
         </div>
-        @if (enrollMessage()) {
-          <p class="muted">{{ enrollMessage() }}</p>
+
+        @if (enrollForm.value.scope === 'individual') {
+          @if (enrollMessage()) {
+            <p class="muted">{{ enrollMessage() }}</p>
+          }
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!enrollForm.value.employee_id || enrollSubmitting()"
+          >
+            割り当てる
+          </button>
+        } @else {
+          @if (bulkEnrollMessage()) {
+            <p class="muted">{{ bulkEnrollMessage() }}</p>
+          }
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="(enrollForm.value.scope === 'department' && !enrollForm.value.department_id) || bulkEnrollSubmitting()"
+          >
+            一括で割り当てる
+          </button>
         }
-        <button type="submit" class="btn btn-primary" [disabled]="enrollForm.invalid || enrollSubmitting()">
-          割り当てる
-        </button>
       </form>
     </div>
   }

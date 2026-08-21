@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use App\Actions\Employees\CreateDelegationAction;
+use App\Exceptions\EmployeeRetiredException;
 use App\Exceptions\InvalidDelegationException;
 use App\Models\Employee;
 use Illuminate\Support\Carbon;
 
-it('creates a delegation for the given period', function () {
+it('指定した期間で委任を作成できる', function () {
     $delegator = Employee::factory()->create();
     $delegate = Employee::factory()->create();
 
@@ -24,7 +25,31 @@ it('creates a delegation for the given period', function () {
         ->and($delegation->ended_at->toDateString())->toBe('2024-01-20');
 });
 
-it('rejects delegating to oneself', function () {
+it('委任元が退職済みの場合は拒否される', function () {
+    $delegator = Employee::factory()->create(['retired_at' => now()->subDay()]);
+    $delegate = Employee::factory()->create();
+
+    expect(fn () => (new CreateDelegationAction)->execute(
+        delegator: $delegator,
+        delegate: $delegate,
+        startedAt: Carbon::now(),
+        endedAt: null,
+    ))->toThrow(EmployeeRetiredException::class);
+});
+
+it('委任先が退職済みの場合は拒否される', function () {
+    $delegator = Employee::factory()->create();
+    $delegate = Employee::factory()->create(['retired_at' => now()->subDay()]);
+
+    expect(fn () => (new CreateDelegationAction)->execute(
+        delegator: $delegator,
+        delegate: $delegate,
+        startedAt: Carbon::now(),
+        endedAt: null,
+    ))->toThrow(EmployeeRetiredException::class);
+});
+
+it('自分自身への委任は拒否される', function () {
     $employee = Employee::factory()->create();
 
     expect(fn () => (new CreateDelegationAction)->execute(
@@ -35,7 +60,7 @@ it('rejects delegating to oneself', function () {
     ))->toThrow(InvalidDelegationException::class);
 });
 
-it('rejects an end date before the start date', function () {
+it('終了日が開始日より前の場合は拒否される', function () {
     $delegator = Employee::factory()->create();
     $delegate = Employee::factory()->create();
 
@@ -47,7 +72,7 @@ it('rejects an end date before the start date', function () {
     ))->toThrow(InvalidDelegationException::class);
 });
 
-it('rejects a delegation that overlaps an existing one for the same pair', function () {
+it('同じ組み合わせで期間が重複する委任は拒否される', function () {
     $delegator = Employee::factory()->create();
     $delegate = Employee::factory()->create();
 

@@ -52,6 +52,15 @@ class Employee extends Model
         return $this->hasOne(EmployeeAssignment::class)->whereNull('ended_at');
     }
 
+    /**
+     * 自分が上司（manager_id）として指定されている、現在有効な割り当て一覧（＝直属の部下の割り当て）。
+     * 一覧画面で「実際に部下を持っているか」を判定する際に使う（withExists等と組み合わせる）。
+     */
+    public function currentDirectReportAssignments(): HasMany
+    {
+        return $this->hasMany(EmployeeAssignment::class, 'manager_id')->whereNull('ended_at');
+    }
+
     public function trainingEnrollments(): HasMany
     {
         return $this->hasMany(TrainingEnrollment::class);

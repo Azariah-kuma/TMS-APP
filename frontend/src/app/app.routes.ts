@@ -8,8 +8,9 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
   },
   {
-    path: 'register',
-    loadComponent: () => import('./features/auth/register/register').then((m) => m.Register),
+    path: 'set-password',
+    loadComponent: () =>
+      import('./features/auth/set-password/set-password').then((m) => m.SetPassword),
   },
   {
     path: '',
@@ -42,6 +43,18 @@ export const routes: Routes = [
           import('./features/trainings/enrollment-detail/enrollment-detail').then(
             (m) => m.EnrollmentDetail,
           ),
+      },
+      {
+        path: 'departments',
+        canActivate: [hrGuard],
+        loadComponent: () =>
+          import('./features/master-data/department-list/department-list').then((m) => m.DepartmentList),
+      },
+      {
+        path: 'positions',
+        canActivate: [hrGuard],
+        loadComponent: () =>
+          import('./features/master-data/position-list/position-list').then((m) => m.PositionList),
       },
       {
         path: 'employees',

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Models\Employee;
 use App\Models\EmployeeAssignment;
 
-it('resolves direct and indirect subordinates through the reporting chain', function () {
+it('報告系統をたどって直接・間接の部下を解決する', function () {
     $director = Employee::factory()->create();
     $manager = Employee::factory()->create();
     $staffA = Employee::factory()->create();
@@ -30,7 +30,7 @@ it('resolves direct and indirect subordinates through the reporting chain', func
         ->and($manager->isManagerOf($unrelated))->toBeFalse();
 });
 
-it('ignores an ended assignment when determining subordinates', function () {
+it('部下を判定する際、終了済みの配属は無視される', function () {
     $manager = Employee::factory()->create();
     $formerReport = Employee::factory()->create();
 

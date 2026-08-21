@@ -16,9 +16,9 @@ final class PositionPolicy
         return $user->employee !== null;
     }
 
-    /** 役職マスタの新規作成は人事のみ。 */
+    /** 役職マスタの新規作成は人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */
     public function create(User $user): bool
     {
-        return $user->employee?->isHr() ?? false;
+        return false;
     }
 }

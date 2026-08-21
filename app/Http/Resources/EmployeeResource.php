@@ -24,10 +24,18 @@ final class EmployeeResource extends JsonResource
             'id' => $this->id,
             'employee_code' => $this->employee_code,
             'name' => $this->user->name,
+            'name_kana' => $this->user->nameKana,
+            'last_name' => $this->user->last_name,
+            'first_name' => $this->user->first_name,
+            'last_name_kana' => $this->user->last_name_kana,
+            'first_name_kana' => $this->user->first_name_kana,
             'email' => $this->user->email,
             'role' => $this->role->value,
             'hired_at' => $this->hired_at?->toDateString(),
             'retired_at' => $this->retired_at?->toDateString(),
+            // 実際に直属の部下を持っているか。
+            // 新規オンボーディング直後は必ずfalse。
+            'is_manager' => (bool) ($this->is_manager ?? false),
             'current_assignment' => new EmployeeAssignmentResource($this->whenLoaded('currentAssignment')),
         ];
     }

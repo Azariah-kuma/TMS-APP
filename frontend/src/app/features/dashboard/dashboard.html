@@ -11,14 +11,6 @@
           <th style="width: 160px">従業員コード</th>
           <td>{{ e.employee_code }}</td>
         </tr>
-        <tr>
-          <th>ロール</th>
-          <td>
-            <span class="badge" [class.badge-accent]="e.role === 'hr'">
-              {{ e.role === 'hr' ? '人事' : '一般社員' }}
-            </span>
-          </td>
-        </tr>
         @if (e.current_assignment; as a) {
           <tr>
             <th>部署</th>
@@ -26,7 +18,12 @@
           </tr>
           <tr>
             <th>役職</th>
-            <td>{{ a.position_name }}</td>
+            <td>
+              <span class="badge" [class.badge-accent]="e.is_manager">{{ a.position_name }}</span>
+              @if (e.role === 'hr') {
+                <span class="badge badge-muted" style="margin-left: 4px">人事</span>
+              }
+            </td>
           </tr>
         }
       </tbody>

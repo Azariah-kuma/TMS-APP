@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Employees;
 
+use App\Actions\Employees\Concerns\GuardsAgainstRetiredEmployees;
 use App\Exceptions\InvalidDelegationException;
 use App\Models\Delegation;
 use App\Models\Employee;
@@ -12,6 +13,8 @@ use Illuminate\Support\Carbon;
 
 final class CreateDelegationAction
 {
+    use GuardsAgainstRetiredEmployees;
+
     /**
      * $delegator の上司権限（部下の参照権限）を、期間限定で $delegate に委任する。
      */
@@ -21,6 +24,9 @@ final class CreateDelegationAction
         Carbon $startedAt,
         ?Carbon $endedAt,
     ): Delegation {
+        $this->assertNotRetired($delegator, '退職済みの従業員は、委任の委任元・委任先にできません。');
+        $this->assertNotRetired($delegate, '退職済みの従業員は、委任の委任元・委任先にできません。');
+
         if ($delegate->is($delegator)) {
             throw new InvalidDelegationException('自分自身に権限を委任することはできません。');
         }

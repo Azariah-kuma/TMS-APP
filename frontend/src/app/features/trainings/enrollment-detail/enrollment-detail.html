@@ -28,15 +28,52 @@
         <tbody>
           @for (lesson of e.training?.lessons; track lesson.id) {
             <tr>
-              <td style="width: 32px">
-                <input
-                  type="checkbox"
-                  [checked]="isLessonCompleted(lesson.id)"
-                  [disabled]="!canEdit() || savingLessonId() === lesson.id"
-                  (change)="toggleLesson(lesson.id)"
-                />
-              </td>
-              <td>{{ lesson.title }}</td>
+              @if (lesson.content_mime_type?.startsWith('video/')) {
+                <td style="width: 32px">
+                  @if (isLessonCompleted(lesson.id)) {
+                    <span class="badge badge-success" title="視聴済み">✓</span>
+                  } @else {
+                    <span class="muted" title="未視聴">—</span>
+                  }
+                </td>
+                <td>
+                  {{ lesson.title }}
+                  <video
+                    [src]="lesson.content_url"
+                    controls
+                    style="max-width: 320px; display: block; margin-top: 4px"
+                    (ended)="onVideoEnded(lesson.id)"
+                  ></video>
+                  <p class="field-hint">動画を最後まで再生すると自動的に完了になります。</p>
+                  @if (canEdit() && isLessonCompleted(lesson.id)) {
+                    <button
+                      type="button"
+                      class="btn btn-small"
+                      [disabled]="savingLessonId() === lesson.id"
+                      (click)="toggleLesson(lesson.id)"
+                    >
+                      完了を取り消す
+                    </button>
+                  }
+                </td>
+              } @else {
+                <td style="width: 32px">
+                  <input
+                    type="checkbox"
+                    [checked]="isLessonCompleted(lesson.id)"
+                    [disabled]="!canEdit() || savingLessonId() === lesson.id"
+                    (change)="toggleLesson(lesson.id)"
+                  />
+                </td>
+                <td>
+                  {{ lesson.title }}
+                  @if (lesson.content_url) {
+                    <a [href]="lesson.content_url" target="_blank" rel="noopener" style="margin-left: 8px">
+                      {{ lesson.content_original_name ?? '教材を開く' }}
+                    </a>
+                  }
+                </td>
+              }
             </tr>
           }
         </tbody>

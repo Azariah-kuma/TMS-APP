@@ -9,6 +9,7 @@ import { EmployeeAssignment } from '../../../core/models/employee-assignment';
 import { Delegation } from '../../../core/models/delegation';
 import { Department } from '../../../core/models/department';
 import { Position } from '../../../core/models/position';
+import { toId } from '../../../core/utils/forms';
 
 @Component({
   selector: 'app-employee-detail',
@@ -50,6 +51,10 @@ export class EmployeeDetail implements OnInit {
     ended_at: [''],
   });
 
+  readonly resendingInvite = signal(false);
+  readonly resendInviteMessage = signal<string | null>(null);
+  readonly resendInviteError = signal<string | null>(null);
+
   private employeeId = 0;
 
   ngOnInit(): void {
@@ -88,9 +93,9 @@ export class EmployeeDetail implements OnInit {
 
     this.employeeService
       .transfer(this.employeeId, {
-        department_id: raw.department_id,
-        position_id: raw.position_id,
-        manager_id: raw.manager_id ? Number(raw.manager_id) : null,
+        department_id: toId(raw.department_id),
+        position_id: toId(raw.position_id),
+        manager_id: raw.manager_id ? toId(raw.manager_id) : null,
         started_at: raw.started_at,
       })
       .subscribe({
@@ -139,6 +144,23 @@ export class EmployeeDetail implements OnInit {
   revokeDelegation(delegationId: number): void {
     this.employeeService.revokeDelegation(delegationId).subscribe((updated) => {
       this.delegations.update((list) => list.map((d) => (d.id === updated.id ? updated : d)));
+    });
+  }
+
+  resendInvite(): void {
+    this.resendingInvite.set(true);
+    this.resendInviteMessage.set(null);
+    this.resendInviteError.set(null);
+
+    this.employeeService.resendInvite(this.employeeId).subscribe({
+      next: (response) => {
+        this.resendingInvite.set(false);
+        this.resendInviteMessage.set(response.message);
+      },
+      error: (err) => {
+        this.resendingInvite.set(false);
+        this.resendInviteError.set(err.error?.message ?? '招待メールの再送信に失敗しました。');
+      },
     });
   }
 }

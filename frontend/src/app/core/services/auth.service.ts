@@ -9,8 +9,10 @@ export interface Credentials {
   password: string;
 }
 
-export interface RegisterPayload extends Credentials {
-  name: string;
+export interface SetPasswordPayload {
+  token: string;
+  email: string;
+  password: string;
   password_confirmation: string;
 }
 
@@ -43,12 +45,13 @@ export class AuthService {
     });
   }
 
-  register(payload: RegisterPayload): Observable<User> {
+  /** 招待メールのリンクから、初回パスワードを設定してログイン状態になる。 */
+  setPassword(payload: SetPasswordPayload): Observable<User> {
     return new Observable<User>((subscriber) => {
       this.csrfCookie().subscribe({
         next: () =>
           this.http
-            .post<User>(`${this.apiUrl}/api/register`, payload)
+            .post<User>(`${this.apiUrl}/api/set-password`, payload)
             .pipe(tap((user) => this.user.set(user)))
             .subscribe(subscriber),
         error: (err) => subscriber.error(err),

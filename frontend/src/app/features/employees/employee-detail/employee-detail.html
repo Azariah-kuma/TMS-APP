@@ -3,9 +3,14 @@
 } @else if (employee(); as e) {
   <div class="page-header">
     <h1>{{ e.name }}</h1>
-    <span class="badge" [class.badge-accent]="e.role === 'hr'">
-      {{ e.role === 'hr' ? '人事' : '一般社員' }}
-    </span>
+    <div>
+      @if (e.current_assignment?.position_name; as positionName) {
+        <span class="badge" [class.badge-accent]="e.is_manager">{{ positionName }}</span>
+      }
+      @if (e.role === 'hr') {
+        <span class="badge badge-muted" style="margin-left: 4px">人事</span>
+      }
+    </div>
   </div>
 
   <div class="panel">
@@ -17,7 +22,26 @@
         </tr>
         <tr>
           <th>メールアドレス</th>
-          <td>{{ e.email }}</td>
+          <td>
+            {{ e.email }}
+            @if (isHr()) {
+              <button
+                type="button"
+                class="btn btn-small"
+                style="margin-left: 8px"
+                [disabled]="resendingInvite()"
+                (click)="resendInvite()"
+              >
+                招待メールを再送信
+              </button>
+              @if (resendInviteMessage()) {
+                <span class="muted" style="margin-left: 8px">{{ resendInviteMessage() }}</span>
+              }
+              @if (resendInviteError()) {
+                <span class="field-error" style="margin-left: 8px">{{ resendInviteError() }}</span>
+              }
+            }
+          </td>
         </tr>
         <tr>
           <th>入社日</th>

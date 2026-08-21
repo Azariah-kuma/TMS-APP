@@ -26,6 +26,18 @@ export class TrainingEnrollmentService {
     });
   }
 
+  /** 人事のみ：部署単位、またはdepartmentIdを省略して全社一括で研修を割り当てる。 */
+  bulkEnroll(
+    trainingId: number,
+    departmentId: number | null,
+    dueAt: string | null,
+  ): Observable<{ enrolled: number; skipped: number }> {
+    return this.http.post<{ enrolled: number; skipped: number }>(
+      `${this.apiUrl}/api/trainings/${trainingId}/bulk-enroll`,
+      { department_id: departmentId, due_at: dueAt },
+    );
+  }
+
   /** Lessonが定義されていない研修のみ利用可（本人／人事）。 */
   updateProgress(id: number, progress: number): Observable<TrainingEnrollment> {
     return this.http.patch<TrainingEnrollment>(`${this.apiUrl}/api/training-enrollments/${id}`, { progress });

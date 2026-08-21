@@ -71,6 +71,13 @@ export class EnrollmentDetail implements OnInit {
     });
   }
 
+  /** 動画を最後まで再生したら、（未完了であれば）自動的に完了にする。動画は手動でチェックを入れさせない。 */
+  onVideoEnded(lessonId: number): void {
+    if (this.canEdit() && !this.isLessonCompleted(lessonId)) {
+      this.toggleLesson(lessonId);
+    }
+  }
+
   submitManualProgress(): void {
     const enrollment = this.enrollment();
     if (!enrollment) {

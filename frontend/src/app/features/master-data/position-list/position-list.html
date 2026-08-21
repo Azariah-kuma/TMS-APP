@@ -1,0 +1,53 @@
+<div class="page-header">
+  <h1>役職</h1>
+</div>
+
+@if (isHr()) {
+  <form class="panel" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label for="name">役職名</label>
+      <input id="name" class="input" type="text" formControlName="name" />
+    </div>
+
+    <div class="field">
+      <label for="code">役職コード</label>
+      <input id="code" class="input" type="text" formControlName="code" />
+    </div>
+
+    <div class="field">
+      <label for="rank">序列（数字が小さいほど上位）</label>
+      <input id="rank" class="input" type="number" formControlName="rank" style="max-width: 120px" />
+    </div>
+
+    @if (error()) {
+      <p class="alert">{{ error() }}</p>
+    }
+
+    <button type="submit" class="btn btn-primary" [disabled]="form.invalid || submitting()">役職を追加</button>
+  </form>
+}
+
+@if (loading()) {
+  <p class="muted">読み込み中…</p>
+} @else if (positions().length === 0) {
+  <p class="muted">役職がまだ登録されていません。</p>
+} @else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>役職コード</th>
+        <th>役職名</th>
+        <th>序列</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (position of positions(); track position.id) {
+        <tr>
+          <td>{{ position.code }}</td>
+          <td>{{ position.name }}</td>
+          <td>{{ position.rank }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

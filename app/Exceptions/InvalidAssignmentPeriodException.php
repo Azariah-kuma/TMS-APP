@@ -4,17 +4,8 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use DomainException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
 /*
- * 研修受講期間が不正な場合に投げられる例外。
+ * 従業員の異動（部署・役職・上司の割り当て）が不正な場合に投げられる例外。
+ * 開始日が現在の割り当てより前になっている、または指揮系統が循環する場合など。
  */
-final class InvalidAssignmentPeriodException extends DomainException
-{
-    public function render(Request $request): JsonResponse
-    {
-        return response()->json(['message' => $this->getMessage()], 422);
-    }
-}
+final class InvalidAssignmentPeriodException extends UnprocessableDomainException {}

@@ -9,7 +9,7 @@ use App\Models\Training;
 use App\Models\TrainingEnrollment;
 use App\Models\TrainingLesson;
 
-it('recalculates progress as a percentage of completed lessons', function () {
+it('完了したLessonの割合として進捗を再計算する', function () {
     $training = Training::factory()->create();
     $lessons = TrainingLesson::factory()->for($training)->count(4)->create();
     $enrollment = TrainingEnrollment::factory()->create(['training_id' => $training->id]);
@@ -24,7 +24,7 @@ it('recalculates progress as a percentage of completed lessons', function () {
     expect($enrollment->progress)->toBe(50);
 });
 
-it('marks the enrollment as completed once every lesson is checked', function () {
+it('全てのLessonにチェックが入ると受講記録を完了にする', function () {
     $training = Training::factory()->create();
     $lessons = TrainingLesson::factory()->for($training)->count(2)->create();
     $enrollment = TrainingEnrollment::factory()->create(['training_id' => $training->id]);
@@ -38,7 +38,7 @@ it('marks the enrollment as completed once every lesson is checked', function ()
         ->and($enrollment->completed_at)->not->toBeNull();
 });
 
-it('recalculates progress downward when a lesson is unchecked', function () {
+it('Lessonのチェックを外すと進捗が下方に再計算される', function () {
     $training = Training::factory()->create();
     $lessons = TrainingLesson::factory()->for($training)->count(2)->create();
     $enrollment = TrainingEnrollment::factory()->create(['training_id' => $training->id]);
@@ -54,10 +54,26 @@ it('recalculates progress downward when a lesson is unchecked', function () {
         ->and($enrollment->status)->toBe(TrainingEnrollmentStatus::InProgress);
 });
 
-it('rejects toggling a lesson that belongs to a different training', function () {
+it('別の研修に属するLessonの切り替えは拒否される', function () {
     $enrollment = TrainingEnrollment::factory()->create();
     $otherLesson = TrainingLesson::factory()->create();
 
     expect(fn () => (app(ToggleTrainingLessonCompletionAction::class))->execute($enrollment, $otherLesson, completed: true))
         ->toThrow(InvalidTrainingLessonException::class);
+});
+
+it('研修にLessonが1つも無い状態になった場合、進捗は0にフォールバックする', function () {
+    $training = Training::factory()->create();
+    $lesson = TrainingLesson::factory()->for($training)->create();
+    $enrollment = TrainingEnrollment::factory()->create(['training_id' => $training->id]);
+
+    $action = app(ToggleTrainingLessonCompletionAction::class);
+    $action->execute($enrollment, $lesson, completed: true);
+
+    // Lessonそのものが削除された場合、完了記録も連鎖して消える（外部キー制約による）。
+    $lesson->delete();
+
+    $enrollment = $action->execute($enrollment, $lesson, completed: false);
+
+    expect($enrollment->progress)->toBe(0);
 });

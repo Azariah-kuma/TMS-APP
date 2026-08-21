@@ -7,10 +7,11 @@ import { Employee, EmployeeRole } from '../models/employee';
 import { EmployeeAssignment } from '../models/employee-assignment';
 
 export interface OnboardEmployeePayload {
-  name: string;
+  last_name: string;
+  first_name: string;
+  last_name_kana: string;
+  first_name_kana: string;
   email: string;
-  password: string;
-  password_confirmation: string;
   employee_code: string;
   role: EmployeeRole;
   hired_at: string;
@@ -75,5 +76,10 @@ export class EmployeeService {
   /** 人事のみ：委任を即時取り消す。 */
   revokeDelegation(delegationId: number): Observable<Delegation> {
     return this.http.delete<Delegation>(`${this.apiUrl}/api/delegations/${delegationId}`);
+  }
+
+  /** 人事のみ：初期パスワード設定用の招待メールを再送する。 */
+  resendInvite(employeeId: number): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/api/employees/${employeeId}/resend-invite`, {});
   }
 }

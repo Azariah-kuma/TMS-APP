@@ -12,10 +12,10 @@ use App\Http\Controllers\Api\TrainingLessonCompletionController;
 use App\Http\Controllers\Api\TrainingLessonController;
 use Illuminate\Support\Facades\Route;
 
-// ログイン試行のブルートフォース攻撃対策として1分あたり6回までに制限
+// ログイン・パスワード設定試行のブルートフォース攻撃対策として1分あたり6回までに制限
 Route::middleware('throttle:6,1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/set-password', [AuthController::class, 'setPassword']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -31,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employees', [EmployeeController::class, 'index']);
     Route::post('/employees', [EmployeeController::class, 'store']);
     Route::get('/employees/{employee}', [EmployeeController::class, 'show']);
+    // 招待メールの再送信は、HR権限があれば無制限に連打できてしまわないよう別途レート制限する
+    Route::post('/employees/{employee}/resend-invite', [EmployeeController::class, 'resendInvite'])
+        ->middleware('throttle:6,1');
 
     // 部署・役職・上司の異動履歴
     Route::get('/employees/{employee}/assignments', [EmployeeAssignmentController::class, 'index']);
@@ -43,6 +46,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 研修の受講登録（人事が対象従業員に割り当てる）
     Route::post('/employees/{employee}/training-enrollments', [TrainingEnrollmentController::class, 'store']);
+
+    // 研修の一括受講登録（部署指定、またはdepartment_id省略で全社）
+    Route::post('/trainings/{training}/bulk-enroll', [TrainingEnrollmentController::class, 'bulkEnroll']);
 
     Route::get('/trainings', [TrainingController::class, 'index']);
     Route::post('/trainings', [TrainingController::class, 'store']);

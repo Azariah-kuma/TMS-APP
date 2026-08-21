@@ -4,16 +4,24 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Employees;
 
+use App\Http\Requests\Concerns\CastsIdFieldsToInt;
 use Illuminate\Foundation\Http\FormRequest;
 
 /*
  * Employee(従業員)の異動リクエストのバリデーションを行うフォーム
- */ 
+ */
 final class StoreEmployeeAssignmentRequest extends FormRequest
 {
+    use CastsIdFieldsToInt;
+
     public function authorize(): bool
     {
         return $this->user()->can('transfer', $this->route('employee'));
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->castIdFieldsToInt('department_id', 'position_id', 'manager_id');
     }
 
     /**

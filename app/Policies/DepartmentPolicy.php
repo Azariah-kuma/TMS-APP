@@ -16,9 +16,9 @@ final class DepartmentPolicy
         return $user->employee !== null;
     }
 
-    /** 部署マスタの新規作成は人事のみ。 */
+    /** 部署マスタの新規作成は人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */
     public function create(User $user): bool
     {
-        return $user->employee?->isHr() ?? false;
+        return false;
     }
 }

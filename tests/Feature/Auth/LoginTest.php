@@ -31,6 +31,24 @@ final class LoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    /** ログイン直後のレスポンスにも、部署・役職・is_managerが含まれる */
+    public function test_login_response_includes_department_position_and_manager_status(): void
+    {
+        $manager = createEmployeeWithAssignment();
+        createEmployeeWithAssignment(assignmentAttributes: ['manager_id' => $manager->id]);
+        $manager->user->update(['password' => Hash::make('password123')]);
+
+        $response = $this->withSpaOrigin()->postJson('/api/login', [
+            'email' => $manager->user->email,
+            'password' => 'password123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('employee.current_assignment.department_name', $manager->currentAssignment->department->name)
+            ->assertJsonPath('employee.current_assignment.position_name', $manager->currentAssignment->position->name)
+            ->assertJsonPath('employee.is_manager', true);
+    }
+
     /** パスワードが誤っている場合はログインできない */
     public function test_user_cannot_login_with_incorrect_password(): void
     {

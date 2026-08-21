@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Trainings\BulkEnrollEmployeesInTrainingAction;
 use App\Actions\Trainings\EnrollEmployeeInTrainingAction;
 use App\Actions\Trainings\UpdateTrainingProgressAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Trainings\BulkEnrollTrainingRequest;
 use App\Http\Requests\Trainings\StoreTrainingEnrollmentRequest;
 use App\Http\Requests\Trainings\UpdateTrainingEnrollmentProgressRequest;
 use App\Http\Resources\TrainingEnrollmentResource;
@@ -31,7 +33,7 @@ final class TrainingEnrollmentController extends Controller
 
         $enrollments = TrainingEnrollment::query()
             ->visibleTo($request->user()->employee)
-            ->with(['training', 'employee.user'])
+            ->with(['training.lessons', 'employee.user', 'lessonCompletions'])
             ->get();
 
         return response()->json(TrainingEnrollmentResource::collection($enrollments));
@@ -41,7 +43,7 @@ final class TrainingEnrollmentController extends Controller
     {
         Gate::authorize('view', $trainingEnrollment);
 
-        return response()->json(new TrainingEnrollmentResource($trainingEnrollment->load('training')));
+        return response()->json(new TrainingEnrollmentResource($trainingEnrollment->load(['training.lessons', 'lessonCompletions'])));
     }
 
     /** 研修の割り当て（受講登録）を行う。 */
@@ -59,9 +61,29 @@ final class TrainingEnrollmentController extends Controller
         );
 
         return response()->json(
-            new TrainingEnrollmentResource($enrollment->load('training')),
+            new TrainingEnrollmentResource($enrollment->load(['training.lessons', 'lessonCompletions'])),
             Response::HTTP_CREATED,
         );
+    }
+
+    /**
+     * 部署単位、または全社一括で研修を受講登録する。
+     * department_id を指定しなければ在籍中の全従業員が対象になる。
+     */
+    public function bulkEnroll(
+        BulkEnrollTrainingRequest $request,
+        Training $training,
+        BulkEnrollEmployeesInTrainingAction $action,
+    ): JsonResponse {
+        $validated = $request->validated();
+
+        $result = $action->execute(
+            training: $training,
+            departmentId: $validated['department_id'] ?? null,
+            dueAt: isset($validated['due_at']) ? Carbon::parse($validated['due_at']) : null,
+        );
+
+        return response()->json($result);
     }
 
     /** 受講進捗の更新。本人または人事のみ実行できる（Policy参照）。 */
@@ -72,7 +94,7 @@ final class TrainingEnrollmentController extends Controller
     ): JsonResponse {
         $enrollment = $action->execute($trainingEnrollment, (int) $request->validated('progress'));
 
-        return response()->json(new TrainingEnrollmentResource($enrollment->load('training')));
+        return response()->json(new TrainingEnrollmentResource($enrollment->load(['training.lessons', 'lessonCompletions'])));
     }
 
     public function destroy(TrainingEnrollment $trainingEnrollment): JsonResponse

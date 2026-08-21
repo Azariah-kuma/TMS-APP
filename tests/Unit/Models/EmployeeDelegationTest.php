@@ -7,7 +7,7 @@ use App\Models\Employee;
 use App\Models\EmployeeAssignment;
 use Illuminate\Support\Collection;
 
-it('lets a delegate temporarily see the delegators subordinates', function () {
+it('委任先は一時的に委任元の部下を閲覧できるようになる', function () {
     $manager = Employee::factory()->create();
     $subordinate = Employee::factory()->create();
     $delegate = Employee::factory()->create();
@@ -26,7 +26,7 @@ it('lets a delegate temporarily see the delegators subordinates', function () {
     expect($delegate->isManagerOf($subordinate))->toBeTrue();
 });
 
-it('does not grant visibility once the delegation period has ended', function () {
+it('委任期間が終了すると閲覧権限は付与されなくなる', function () {
     $manager = Employee::factory()->create();
     $subordinate = Employee::factory()->create();
     $delegate = Employee::factory()->create();
@@ -43,7 +43,7 @@ it('does not grant visibility once the delegation period has ended', function ()
     expect($delegate->isManagerOf($subordinate))->toBeFalse();
 });
 
-it('does not let delegation chains create a cycle in hierarchySubordinateIds', function () {
+it('委任の連鎖があってもhierarchySubordinateIdsで循環が発生しない', function () {
     $a = Employee::factory()->create();
     $b = Employee::factory()->create();
 

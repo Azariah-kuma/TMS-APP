@@ -13,7 +13,6 @@
         <th>氏名</th>
         <th>部署</th>
         <th>役職</th>
-        <th>ロール</th>
       </tr>
     </thead>
     <tbody>
@@ -22,11 +21,15 @@
           <td>{{ employee.employee_code }}</td>
           <td><a [routerLink]="['/employees', employee.id]">{{ employee.name }}</a></td>
           <td>{{ employee.current_assignment?.department_name ?? '—' }}</td>
-          <td>{{ employee.current_assignment?.position_name ?? '—' }}</td>
           <td>
-            <span class="badge" [class.badge-accent]="employee.role === 'hr'">
-              {{ employee.role === 'hr' ? '人事' : '一般社員' }}
-            </span>
+            @if (employee.current_assignment?.position_name; as positionName) {
+              <span class="badge" [class.badge-accent]="employee.is_manager">{{ positionName }}</span>
+            } @else {
+              <span class="muted">—</span>
+            }
+            @if (employee.role === 'hr') {
+              <span class="badge badge-muted" style="margin-left: 4px">人事</span>
+            }
           </td>
         </tr>
       }

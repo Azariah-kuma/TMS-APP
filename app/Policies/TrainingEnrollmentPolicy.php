@@ -22,7 +22,7 @@ final class TrainingEnrollmentPolicy
         return $user->employee !== null;
     }
 
-    /** 本人・その上司（直接・間接を問わない）・人事は閲覧可能。 */
+    /** 本人・その上司（直接・間接を問わない）は閲覧可能（人事はGate::beforeで別途許可される）。 */
     public function view(User $user, TrainingEnrollment $enrollment): bool
     {
         $actor = $user->employee;
@@ -31,19 +31,17 @@ final class TrainingEnrollmentPolicy
             return false;
         }
 
-        return $actor->isHr()
-            || $actor->is($enrollment->employee)
-            || $actor->isManagerOf($enrollment->employee);
+        return $actor->is($enrollment->employee) || $actor->isManagerOf($enrollment->employee);
     }
 
-    /** 研修の割り当て（受講登録）は人事のみ。 */
+    /** 研修の割り当て（受講登録）は人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */
     public function create(User $user): bool
     {
-        return $user->employee?->isHr() ?? false;
+        return false;
     }
 
     /**
-     * 進捗の更新は本人か人事のみ。
+     * 進捗の更新は本人のみ（人事はGate::beforeで別途許可される）。
      *
      * 上司は「部下の進捗参照」までが権限であり、代理で更新することはできない。
      */
@@ -55,12 +53,12 @@ final class TrainingEnrollmentPolicy
             return false;
         }
 
-        return $actor->isHr() || $actor->is($enrollment->employee);
+        return $actor->is($enrollment->employee);
     }
 
-    /** 受講登録の取り消しは人事のみ。 */
+    /** 受講登録の取り消しは人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */
     public function delete(User $user, TrainingEnrollment $enrollment): bool
     {
-        return $user->employee?->isHr() ?? false;
+        return false;
     }
 }

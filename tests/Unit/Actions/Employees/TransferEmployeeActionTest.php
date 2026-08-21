@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\Employees\TransferEmployeeAction;
+use App\Exceptions\EmployeeRetiredException;
 use App\Exceptions\InvalidAssignmentPeriodException;
 use App\Models\Department;
 use App\Models\Employee;
@@ -10,7 +11,7 @@ use App\Models\EmployeeAssignment;
 use App\Models\Position;
 use Illuminate\Support\Carbon;
 
-it('closes the previous assignment and opens a new one on transfer', function () {
+it('異動時に前の配属を終了し、新しい配属を開始する', function () {
     $employee = Employee::factory()->create();
 
     $original = EmployeeAssignment::factory()->create([
@@ -38,7 +39,7 @@ it('closes the previous assignment and opens a new one on transfer', function ()
     expect($employee->assignments()->count())->toBe(2);
 });
 
-it('rejects a transfer dated before the current assignment started', function () {
+it('現在の配属開始日より前の日付での異動は拒否される', function () {
     $employee = Employee::factory()->create();
 
     EmployeeAssignment::factory()->create([
@@ -58,7 +59,7 @@ it('rejects a transfer dated before the current assignment started', function ()
     ))->toThrow(InvalidAssignmentPeriodException::class);
 });
 
-it('rejects assigning an employee as their own manager', function () {
+it('従業員を自分自身の上司として設定することは拒否される', function () {
     $employee = Employee::factory()->create();
 
     $action = new TransferEmployeeAction;
@@ -72,7 +73,36 @@ it('rejects assigning an employee as their own manager', function () {
     ))->toThrow(InvalidAssignmentPeriodException::class);
 });
 
-it('rejects assigning a (indirect) subordinate as manager, since it would create a cycle', function () {
+it('退職済みの従業員の異動は拒否される', function () {
+    $employee = Employee::factory()->create(['retired_at' => now()->subDay()]);
+
+    $action = new TransferEmployeeAction;
+
+    expect(fn () => $action->execute(
+        employee: $employee,
+        departmentId: Department::factory()->create()->id,
+        positionId: Position::factory()->create()->id,
+        managerId: null,
+        startedAt: Carbon::now(),
+    ))->toThrow(EmployeeRetiredException::class);
+});
+
+it('退職済みの従業員を上司として設定することは拒否される', function () {
+    $employee = Employee::factory()->create();
+    $retiredManager = Employee::factory()->create(['retired_at' => now()->subDay()]);
+
+    $action = new TransferEmployeeAction;
+
+    expect(fn () => $action->execute(
+        employee: $employee,
+        departmentId: Department::factory()->create()->id,
+        positionId: Position::factory()->create()->id,
+        managerId: $retiredManager->id,
+        startedAt: Carbon::now(),
+    ))->toThrow(EmployeeRetiredException::class);
+});
+
+it('（間接的な）部下を上司として設定することは、循環関係になるため拒否される', function () {
     $director = Employee::factory()->create();
     $subordinate = Employee::factory()->create();
 
