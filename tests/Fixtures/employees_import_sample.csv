@@ -1,0 +1,4 @@
+姓,名,セイ,メイ,メールアドレス,従業員コード,ロール,入社日,部署コード,役職コード,上司の従業員コード
+山田,太郎,ヤマダ,タロウ,taro.yamada@example.com,EMP-1001,一般社員,2026-04-01,DEV,STAFF,EMP-0001
+鈴木,花子,スズキ,ハナコ,hanako.suzuki@example.com,EMP-1002,一般社員,2026-04-01,SALES,STAFF,
+高橋,一郎,タカハシ,イチロウ,ichiro.takahashi@example.com,EMP-1003,人事,2026-04-01,HR,LEADER,

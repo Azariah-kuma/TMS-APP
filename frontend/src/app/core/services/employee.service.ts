@@ -33,6 +33,18 @@ export interface CreateDelegationPayload {
   ended_at: string | null;
 }
 
+export interface BulkImportError {
+  row: number;
+  message: string;
+  /** 元のCSV行データ（ヘッダー名 => 値）。失敗行だけのCSVを再構成する際に使う。 */
+  data: Record<string, string>;
+}
+
+export interface BulkImportResult {
+  created: Employee[];
+  errors: BulkImportError[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
   private readonly http = inject(HttpClient);
@@ -50,6 +62,14 @@ export class EmployeeService {
   /** 人事のみ：ログインアカウントと従業員レコードをまとめて作成する。 */
   onboard(payload: OnboardEmployeePayload): Observable<Employee> {
     return this.http.post<Employee>(`${this.apiUrl}/api/employees`, payload);
+  }
+
+  /** 人事のみ：CSVファイルから複数の新入社員をまとめて登録する。 */
+  bulkImport(file: File): Observable<BulkImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<BulkImportResult>(`${this.apiUrl}/api/employees/bulk-import`, formData);
   }
 
   assignments(employeeId: number): Observable<EmployeeAssignment[]> {

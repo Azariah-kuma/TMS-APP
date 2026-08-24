@@ -30,6 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/employees', [EmployeeController::class, 'index']);
     Route::post('/employees', [EmployeeController::class, 'store']);
+    // CSVファイルによる複数従業員の一括登録
+    Route::post('/employees/bulk-import', [EmployeeController::class, 'bulkImport']);
     Route::get('/employees/{employee}', [EmployeeController::class, 'show']);
     // 招待メールの再送信は、HR権限があれば無制限に連打できてしまわないよう別途レート制限する
     Route::post('/employees/{employee}/resend-invite', [EmployeeController::class, 'resendInvite'])
@@ -59,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // 研修を構成するLesson（教材）一覧
     Route::get('/trainings/{training}/lessons', [TrainingLessonController::class, 'index']);
     Route::post('/trainings/{training}/lessons', [TrainingLessonController::class, 'store']);
+    Route::delete('/trainings/{training}/lessons/{trainingLesson}', [TrainingLessonController::class, 'destroy']);
 
     // 受講進捗（ロールに応じて閲覧範囲がスコープされる）
     Route::get('/training-enrollments', [TrainingEnrollmentController::class, 'index']);

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Employees\BulkImportEmployeesAction;
 use App\Actions\Employees\OnboardEmployeeAction;
 use App\Actions\Employees\SendEmployeeInviteAction;
 use App\Enums\EmployeeRole;
 use App\Exceptions\InviteEmailFailedException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Employees\BulkImportEmployeesRequest;
 use App\Http\Requests\Employees\StoreEmployeeRequest;
 use App\Http\Resources\EmployeeResource;
 use App\Models\Employee;
@@ -53,6 +55,20 @@ final class EmployeeController extends Controller
         );
 
         return response()->json(new EmployeeResource($employee), Response::HTTP_CREATED);
+    }
+
+    /**
+     * CSVファイルから複数の社員をまとめて登録する。行単位で成否を分けて返し、
+     * 一部の行が不正でも他の行の登録は継続する。
+     */
+    public function bulkImport(BulkImportEmployeesRequest $request, BulkImportEmployeesAction $action): JsonResponse
+    {
+        $result = $action->execute($request->file('file'));
+
+        return response()->json([
+            'created' => EmployeeResource::collection($result['created']),
+            'errors' => $result['errors'],
+        ]);
     }
 
     public function show(Employee $employee): JsonResponse

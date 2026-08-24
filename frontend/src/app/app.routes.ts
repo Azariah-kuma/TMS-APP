@@ -71,6 +71,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'employees/bulk-import',
+        canActivate: [hrGuard],
+        loadComponent: () =>
+          import('./features/employees/employee-bulk-import/employee-bulk-import').then(
+            (m) => m.EmployeeBulkImport,
+          ),
+      },
+      {
         path: 'employees/:id',
         loadComponent: () =>
           import('./features/employees/employee-detail/employee-detail').then((m) => m.EmployeeDetail),

@@ -38,6 +38,7 @@ export class TrainingDetail implements OnInit {
   readonly lessonSubmitting = signal(false);
   readonly lessonError = signal<string | null>(null);
   readonly lessonContent = signal<File | null>(null);
+  readonly lessonDeletingId = signal<number | null>(null);
   readonly lessonForm = this.fb.nonNullable.group({
     title: ['', Validators.required],
   });
@@ -112,6 +113,25 @@ export class TrainingDetail implements OnInit {
           this.lessonError.set(err.error?.message ?? '教材の追加に失敗しました。');
         },
       });
+  }
+
+  deleteLesson(lessonId: number): void {
+    if (!confirm('このLessonを削除しますか？受講者の完了記録も併せて削除されます。')) {
+      return;
+    }
+
+    this.lessonDeletingId.set(lessonId);
+
+    this.trainingService.deleteLesson(this.trainingId, lessonId).subscribe({
+      next: () => {
+        this.lessonDeletingId.set(null);
+        this.trainingService.get(this.trainingId).subscribe((training) => this.training.set(training));
+      },
+      error: (err) => {
+        this.lessonDeletingId.set(null);
+        this.lessonError.set(err.error?.message ?? 'Lessonの削除に失敗しました。');
+      },
+    });
   }
 
   enrollEmployee(): void {

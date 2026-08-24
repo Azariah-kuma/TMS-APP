@@ -1,0 +1,87 @@
+<div class="page-header">
+  <h1>従業員をCSVで一括登録</h1>
+  <a class="btn" routerLink="/employees">一覧に戻る</a>
+</div>
+
+<div class="panel">
+  <h2>CSVフォーマット</h2>
+  <p class="field-hint">
+    1行目はヘッダー行として、以下の列名をこの順で含めてください（列の順序は入れ替え可能です）。
+  </p>
+  <p class="field-hint">
+    姓, 名, セイ, メイ, メールアドレス, 従業員コード, ロール（「一般社員」または「人事」）,
+    入社日（YYYY-MM-DD）, 部署コード, 役職コード, 上司の従業員コード（任意）
+  </p>
+  <p class="field-hint">
+    部署コード・役職コードは、部署一覧・役職一覧画面で確認できるコードを指定してください。
+    上司の従業員コードは、既に登録済みの従業員のコードのみ指定できます（同じCSV内の他の行を上司に指定することはできません）。
+  </p>
+</div>
+
+<div class="panel">
+  <div class="field">
+    <label for="csv-file">CSVファイル</label>
+    <input id="csv-file" class="input" type="file" accept=".csv,text/csv" (change)="onFileSelected($event)" />
+  </div>
+
+  @if (error()) {
+    <p class="alert">{{ error() }}</p>
+  }
+
+  <button type="button" class="btn btn-primary" [disabled]="!file() || submitting()" (click)="submit()">
+    取り込む
+  </button>
+</div>
+
+@if (result(); as r) {
+  <div class="panel">
+    <h2>結果</h2>
+    <p>{{ r.created.length }}件登録しました。{{ r.errors.length }}件エラーがありました。</p>
+
+    @if (r.errors.length > 0) {
+      <div class="actions" style="margin-bottom: 8px">
+        <button type="button" class="btn btn-small" (click)="downloadFailedRows()">
+          失敗した行をCSVでダウンロード
+        </button>
+      </div>
+      <p class="field-hint">
+        ダウンロードしたCSVの内容を修正し、そのまま再アップロードしてください（成功した行は含まれていません）。
+      </p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>CSV行</th>
+            <th>エラー内容</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of r.errors; track e.row) {
+            <tr>
+              <td>{{ e.row }}</td>
+              <td>{{ e.message }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @if (r.created.length > 0) {
+      <table class="table" style="margin-top: 12px">
+        <thead>
+          <tr>
+            <th>従業員コード</th>
+            <th>氏名</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (employee of r.created; track employee.id) {
+            <tr>
+              <td>{{ employee.employee_code }}</td>
+              <td><a [routerLink]="['/employees', employee.id]">{{ employee.name }}</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+}

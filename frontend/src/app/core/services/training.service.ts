@@ -52,4 +52,9 @@ export class TrainingService {
 
     return this.http.post<TrainingLesson>(`${this.apiUrl}/api/trainings/${trainingId}/lessons`, formData);
   }
+
+  /** 人事のみ：研修からLessonを削除する。 */
+  deleteLesson(trainingId: number, lessonId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/api/trainings/${trainingId}/lessons/${lessonId}`);
+  }
 }

@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Notifications\SetInitialPasswordNotification;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Laravel\Sanctum\Sanctum;
@@ -170,4 +171,73 @@ it('招待メールの再送信に失敗した場合は、その旨を明確に�
     Sanctum::actingAs($hr->user);
 
     $this->postJson("/api/employees/{$employee->id}/resend-invite")->assertUnprocessable();
+});
+
+it('人事はCSVファイルで複数の新入社員を一括登録できる', function () {
+    Notification::fake();
+
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    Department::factory()->create(['code' => 'DEV']);
+    Position::factory()->create(['code' => 'STAFF']);
+
+    $csv = "姓,名,セイ,メイ,メールアドレス,従業員コード,ロール,入社日,部署コード,役職コード,上司の従業員コード\n"
+        ."山田,太郎,ヤマダ,タロウ,taro@example.com,EMP-9001,一般社員,2026-04-01,DEV,STAFF,\n"
+        ."鈴木,花子,スズキ,ハナコ,hanako@example.com,EMP-9002,一般社員,2026-04-01,DEV,STAFF,\n";
+
+    Sanctum::actingAs($hr->user);
+
+    $response = $this->post('/api/employees/bulk-import', [
+        'file' => UploadedFile::fake()->createWithContent('employees.csv', $csv),
+    ])->assertOk();
+
+    expect($response->json('created'))->toHaveCount(2)
+        ->and($response->json('errors'))->toBe([]);
+
+    $this->assertDatabaseHas('employees', ['employee_code' => 'EMP-9001'])
+        ->assertDatabaseHas('employees', ['employee_code' => 'EMP-9002']);
+});
+
+it('CSVに不正な行が含まれていても、他の行は登録され、不正な行はエラーとして返される', function () {
+    Notification::fake();
+
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    Department::factory()->create(['code' => 'DEV']);
+    Position::factory()->create(['code' => 'STAFF']);
+
+    $csv = "姓,名,セイ,メイ,メールアドレス,従業員コード,ロール,入社日,部署コード,役職コード,上司の従業員コード\n"
+        ."山田,太郎,ヤマダ,タロウ,invalid-email,EMP-9101,一般社員,2026-04-01,DEV,STAFF,\n"
+        ."鈴木,花子,スズキ,ハナコ,hanako2@example.com,EMP-9102,一般社員,2026-04-01,DEV,STAFF,\n";
+
+    Sanctum::actingAs($hr->user);
+
+    $response = $this->post('/api/employees/bulk-import', [
+        'file' => UploadedFile::fake()->createWithContent('employees.csv', $csv),
+    ])->assertOk();
+
+    expect($response->json('created'))->toHaveCount(1)
+        ->and($response->json('errors'))->toHaveCount(1)
+        ->and($response->json('errors.0.row'))->toBe(2)
+        ->and($response->json('errors.0.data.メールアドレス'))->toBe('invalid-email');
+});
+
+it('一般社員はCSV一括登録を実行できない', function () {
+    $employee = createEmployeeWithAssignment();
+
+    $csv = "姓,名,セイ,メイ,メールアドレス,従業員コード,ロール,入社日,部署コード,役職コード,上司の従業員コード\n";
+
+    Sanctum::actingAs($employee->user);
+
+    $this->post('/api/employees/bulk-import', [
+        'file' => UploadedFile::fake()->createWithContent('employees.csv', $csv),
+    ])->assertForbidden();
+});
+
+it('CSVファイル以外のアップロードは拒否される', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+
+    Sanctum::actingAs($hr->user);
+
+    $this->post('/api/employees/bulk-import', [
+        'file' => UploadedFile::fake()->create('employees.pdf', 10, 'application/pdf'),
+    ])->assertUnprocessable()->assertJsonValidationErrors('file');
 });

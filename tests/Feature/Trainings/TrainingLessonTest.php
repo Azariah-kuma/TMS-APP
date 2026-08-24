@@ -178,6 +178,43 @@ it('チェック直後だけでなく、ページを読み込み直してもLess
     expect($listed['completed_lesson_ids'])->toBe([$lesson->id]);
 });
 
+it('人事はLessonを削除できる', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $training = Training::factory()->create();
+    $lesson = TrainingLesson::factory()->for($training)->create();
+
+    Sanctum::actingAs($hr->user);
+
+    $this->deleteJson("/api/trainings/{$training->id}/lessons/{$lesson->id}")->assertNoContent();
+
+    expect(TrainingLesson::find($lesson->id))->toBeNull();
+});
+
+it('一般社員はLessonを削除できない', function () {
+    $employee = createEmployeeWithAssignment();
+    $training = Training::factory()->create();
+    $lesson = TrainingLesson::factory()->for($training)->create();
+
+    Sanctum::actingAs($employee->user);
+
+    $this->deleteJson("/api/trainings/{$training->id}/lessons/{$lesson->id}")->assertForbidden();
+
+    expect(TrainingLesson::find($lesson->id))->not->toBeNull();
+});
+
+it('別の研修に属するLessonの削除を試みると拒否される', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $training = Training::factory()->create();
+    $otherLesson = TrainingLesson::factory()->create();
+
+    Sanctum::actingAs($hr->user);
+
+    $this->deleteJson("/api/trainings/{$training->id}/lessons/{$otherLesson->id}")
+        ->assertStatus(422);
+
+    expect(TrainingLesson::find($otherLesson->id))->not->toBeNull();
+});
+
 it('研修にLessonが存在する場合、手動での進捗更新は拒否される', function () {
     $employee = createEmployeeWithAssignment();
     $training = Training::factory()->create();
