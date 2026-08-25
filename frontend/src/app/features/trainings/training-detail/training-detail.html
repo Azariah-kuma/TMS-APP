@@ -16,6 +16,42 @@
     <div style="margin-top: 12px">
       <a class="btn btn-primary" [routerLink]="['/enrollments', enrollment.id]">進捗を入力する</a>
     </div>
+  } @else if (!isHr()) {
+    <div class="panel">
+      @if (myRequest(); as request) {
+        <p>
+          申請ステータス:
+          <span
+            class="badge"
+            [class.badge-success]="request.status === 'approved'"
+            [class.badge-accent]="request.status === 'rejected'"
+          >
+            {{ requestStatusLabel(request.status) }}
+          </span>
+        </p>
+        @if (request.status === 'rejected' && request.decision_comment) {
+          <p class="muted">却下理由: {{ request.decision_comment }}</p>
+        }
+        @if (request.status === 'pending') {
+          <button type="button" class="btn btn-small btn-danger" (click)="cancelMyRequest()">申請を取り消す</button>
+        }
+      } @else {
+        <form [formGroup]="applyForm" (ngSubmit)="applyForTraining()">
+          <div class="field">
+            <label for="apply-reason">申請理由（任意）</label>
+            <textarea id="apply-reason" class="input" formControlName="reason"></textarea>
+          </div>
+          <div class="field">
+            <label for="apply-due">希望期限（任意）</label>
+            <input id="apply-due" class="input" type="date" formControlName="due_at" style="max-width: 200px" />
+          </div>
+          @if (applyError()) {
+            <p class="alert">{{ applyError() }}</p>
+          }
+          <button type="submit" class="btn btn-primary" [disabled]="applySubmitting()">この研修を申請する</button>
+        </form>
+      }
+    </div>
   }
 
   <div class="panel">

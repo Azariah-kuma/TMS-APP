@@ -5,11 +5,14 @@ import { AuthService } from '../../../core/services/auth.service';
 import { EmployeeService } from '../../../core/services/employee.service';
 import { MasterDataService } from '../../../core/services/master-data.service';
 import { TrainingEnrollmentService } from '../../../core/services/training-enrollment.service';
+import { TrainingRequestService } from '../../../core/services/training-request.service';
 import { TrainingService } from '../../../core/services/training.service';
 import { Department } from '../../../core/models/department';
 import { Employee } from '../../../core/models/employee';
 import { Training } from '../../../core/models/training';
 import { TrainingEnrollment } from '../../../core/models/training-enrollment';
+import { TrainingRequest } from '../../../core/models/training-request';
+import { requestStatusLabel } from '../../../shared/status-label';
 import { toId } from '../../../core/utils/forms';
 
 @Component({
@@ -24,9 +27,11 @@ export class TrainingDetail implements OnInit {
   private readonly employeeService = inject(EmployeeService);
   private readonly masterData = inject(MasterDataService);
   private readonly enrollmentService = inject(TrainingEnrollmentService);
+  private readonly requestService = inject(TrainingRequestService);
   private readonly auth = inject(AuthService);
 
   readonly isHr = this.auth.isHr;
+  readonly requestStatusLabel = requestStatusLabel;
   readonly training = signal<Training | null>(null);
   readonly employees = signal<Employee[]>([]);
   readonly departments = signal<Department[]>([]);
@@ -34,6 +39,16 @@ export class TrainingDetail implements OnInit {
 
   /** ログイン中の従業員自身の、この研修への受講記録（あれば）。 */
   readonly myEnrollment = signal<TrainingEnrollment | null>(null);
+
+  /** ログイン中の従業員自身の、この研修への申請のうち直近のもの（あれば）。 */
+  readonly myRequest = signal<TrainingRequest | null>(null);
+
+  readonly applySubmitting = signal(false);
+  readonly applyError = signal<string | null>(null);
+  readonly applyForm = this.fb.nonNullable.group({
+    reason: [''],
+    due_at: [''],
+  });
 
   readonly lessonSubmitting = signal(false);
   readonly lessonError = signal<string | null>(null);
@@ -73,10 +88,52 @@ export class TrainingDetail implements OnInit {
       this.myEnrollment.set(mine ?? null);
     });
 
+    if (!this.isHr()) {
+      this.loadMyRequest();
+    }
+
     if (this.isHr()) {
       this.employeeService.list().subscribe((employees) => this.employees.set(employees));
       this.masterData.departments().subscribe((departments) => this.departments.set(departments));
     }
+  }
+
+  private loadMyRequest(): void {
+    this.requestService.list().subscribe((requests) => {
+      const employeeId = this.auth.currentEmployee()?.id;
+      const mine = requests.find(
+        (r) => r.employee_id === employeeId && r.training?.id === this.trainingId,
+      );
+      this.myRequest.set(mine ?? null);
+    });
+  }
+
+  applyForTraining(): void {
+    this.applySubmitting.set(true);
+    this.applyError.set(null);
+
+    const raw = this.applyForm.getRawValue();
+
+    this.requestService.create(this.trainingId, raw.reason || null, raw.due_at || null).subscribe({
+      next: (request) => {
+        this.applySubmitting.set(false);
+        this.applyForm.reset({ reason: '', due_at: '' });
+        this.myRequest.set(request);
+      },
+      error: (err) => {
+        this.applySubmitting.set(false);
+        this.applyError.set(err.error?.message ?? '申請に失敗しました。');
+      },
+    });
+  }
+
+  cancelMyRequest(): void {
+    const request = this.myRequest();
+    if (!request || !confirm('この申請を取り消しますか？')) {
+      return;
+    }
+
+    this.requestService.cancel(request.id).subscribe((cancelled) => this.myRequest.set(cancelled));
   }
 
   onLessonContentSelected(event: Event): void {

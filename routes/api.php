@@ -6,10 +6,12 @@ use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\EmployeeAssignmentController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\PositionController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\TrainingEnrollmentController;
 use App\Http\Controllers\Api\TrainingLessonCompletionController;
 use App\Http\Controllers\Api\TrainingLessonController;
+use App\Http\Controllers\Api\TrainingRequestController;
 use Illuminate\Support\Facades\Route;
 
 // ログイン・パスワード設定試行のブルートフォース攻撃対策として1分あたり6回までに制限
@@ -32,6 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/employees', [EmployeeController::class, 'store']);
     // CSVファイルによる複数従業員の一括登録
     Route::post('/employees/bulk-import', [EmployeeController::class, 'bulkImport']);
+    // ログイン中の従業員の部下一覧（{employee}より前に登録する必要がある）
+    Route::get('/employees/subordinates', [EmployeeController::class, 'subordinates']);
     Route::get('/employees/{employee}', [EmployeeController::class, 'show']);
     // 招待メールの再送信は、HR権限があれば無制限に連打できてしまわないよう別途レート制限する
     Route::post('/employees/{employee}/resend-invite', [EmployeeController::class, 'resendInvite'])
@@ -48,6 +52,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 研修の受講登録（人事が対象従業員に割り当てる）
     Route::post('/employees/{employee}/training-enrollments', [TrainingEnrollmentController::class, 'store']);
+
+    // 研修受講の申請・承認（従業員が自ら申請し、上司または人事が承認/却下する）
+    Route::get('/training-requests', [TrainingRequestController::class, 'index']);
+    Route::post('/training-requests', [TrainingRequestController::class, 'store']);
+    Route::get('/training-requests/{trainingRequest}', [TrainingRequestController::class, 'show']);
+    Route::post('/training-requests/{trainingRequest}/approve', [TrainingRequestController::class, 'approve']);
+    Route::post('/training-requests/bulk-approve', [TrainingRequestController::class, 'bulkApprove']);
+    Route::post('/training-requests/{trainingRequest}/reject', [TrainingRequestController::class, 'reject']);
+    Route::delete('/training-requests/{trainingRequest}', [TrainingRequestController::class, 'destroy']);
+    // 部署単位の一括申請（上司が自部署の部下に受講させたい場合）
+    Route::post('/trainings/{training}/bulk-request', [TrainingRequestController::class, 'bulkRequest']);
 
     // 研修の一括受講登録（部署指定、またはdepartment_id省略で全社）
     Route::post('/trainings/{training}/bulk-enroll', [TrainingEnrollmentController::class, 'bulkEnroll']);
@@ -78,4 +93,8 @@ Route::middleware('auth:sanctum')->group(function () {
         '/training-enrollments/{trainingEnrollment}/lessons/{trainingLesson}',
         [TrainingLessonCompletionController::class, 'incomplete'],
     );
+
+    // 人事向けレポート（研修別・部署別の受講状況サマリー、CSVエクスポート）
+    Route::get('/reports/training-summary', [ReportController::class, 'summary']);
+    Route::get('/reports/training-enrollments.csv', [ReportController::class, 'exportCsv']);
 });

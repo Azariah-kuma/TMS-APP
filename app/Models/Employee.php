@@ -66,6 +66,12 @@ class Employee extends Model
         return $this->hasMany(TrainingEnrollment::class);
     }
 
+    /** 自分が申請した研修受講申請の一覧。 */
+    public function trainingRequests(): HasMany
+    {
+        return $this->hasMany(TrainingRequest::class);
+    }
+
     /** 自分が委任元（delegator）となっている委任の一覧。 */
     public function delegationsGiven(): HasMany
     {

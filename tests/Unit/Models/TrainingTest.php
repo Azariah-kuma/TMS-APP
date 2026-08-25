@@ -5,12 +5,20 @@ declare(strict_types=1);
 use App\Models\Training;
 use App\Models\TrainingEnrollment;
 use App\Models\TrainingLesson;
+use App\Models\TrainingRequest;
 
 it('研修に属する受講記録一覧を取得できる', function () {
     $training = Training::factory()->create();
     $enrollment = TrainingEnrollment::factory()->create(['training_id' => $training->id]);
 
     expect($training->enrollments()->pluck('id'))->toEqual(collect([$enrollment->id]));
+});
+
+it('研修に属する受講申請一覧を取得できる', function () {
+    $training = Training::factory()->create();
+    $request = TrainingRequest::factory()->create(['training_id' => $training->id]);
+
+    expect($training->trainingRequests()->pluck('id'))->toEqual(collect([$request->id]));
 });
 
 it('position順にLesson一覧を取得できる', function () {

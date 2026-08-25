@@ -59,6 +59,11 @@ export class EmployeeService {
     return this.http.get<Employee>(`${this.apiUrl}/api/employees/${id}`);
   }
 
+  /** ログイン中の従業員の部下一覧（直接・間接、有効な委任経由を含む）。部下がいなければ空配列。 */
+  subordinates(): Observable<Employee[]> {
+    return this.http.get<Employee[]>(`${this.apiUrl}/api/employees/subordinates`);
+  }
+
   /** 人事のみ：ログインアカウントと従業員レコードをまとめて作成する。 */
   onboard(payload: OnboardEmployeePayload): Observable<Employee> {
     return this.http.post<Employee>(`${this.apiUrl}/api/employees`, payload);

@@ -9,7 +9,9 @@ use App\Exceptions\EmployeeRetiredException;
 use App\Models\Employee;
 use App\Models\Training;
 use App\Models\TrainingEnrollment;
+use App\Notifications\TrainingEnrollmentCreatedNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 it('従業員を研修に「未着手」ステータスで受講登録する', function () {
     $employee = Employee::factory()->create();
@@ -21,6 +23,17 @@ it('従業員を研修に「未着手」ステータスで受講登録する', f
         ->and($enrollment->training_id)->toBe($training->id)
         ->and($enrollment->status)->toBe(TrainingEnrollmentStatus::NotStarted)
         ->and($enrollment->progress)->toBe(0);
+});
+
+it('受講登録が作られると、本人に受講可能になった旨のメールが送られる', function () {
+    Notification::fake();
+
+    $employee = Employee::factory()->create();
+    $training = Training::factory()->create();
+
+    (new EnrollEmployeeInTrainingAction)->execute($employee, $training);
+
+    Notification::assertSentTo($employee->user, TrainingEnrollmentCreatedNotification::class);
 });
 
 it('同じ従業員を同じ研修に二重登録することは拒否される', function () {

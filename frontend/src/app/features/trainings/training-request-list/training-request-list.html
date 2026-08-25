@@ -1,0 +1,225 @@
+<div class="page-header">
+  <h1>研修申請</h1>
+</div>
+
+<div class="accordion">
+  <button type="button" class="accordion-header" (click)="togglePanel('self')">
+    <span>研修を申請する</span>
+    <span>{{ activePanel() === 'self' ? '▾' : '▸' }}</span>
+  </button>
+  @if (activePanel() === 'self') {
+    <form class="accordion-body" [formGroup]="applyForm" (ngSubmit)="submitApply()">
+      <div class="field">
+        <label for="training_id">研修</label>
+        <select id="training_id" class="input" formControlName="training_id">
+          <option [value]="0">選択してください</option>
+          @for (training of trainings(); track training.id) {
+            <option [value]="training.id">{{ training.title }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="reason">申請理由（任意）</label>
+        <textarea id="reason" class="input" formControlName="reason"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="due_at">希望期限（任意）</label>
+        <input id="due_at" class="input" type="date" formControlName="due_at" style="max-width: 200px" />
+      </div>
+
+      @if (applyError()) {
+        <p class="alert">{{ applyError() }}</p>
+      }
+
+      <button type="submit" class="btn btn-primary" [disabled]="applyForm.invalid || applySubmitting()">
+        申請する
+      </button>
+    </form>
+  }
+</div>
+
+@if (isManager()) {
+  <div class="accordion">
+    <button type="button" class="accordion-header" (click)="togglePanel('delegate')">
+      <span>部下に申請する</span>
+      <span>{{ activePanel() === 'delegate' ? '▾' : '▸' }}</span>
+    </button>
+    @if (activePanel() === 'delegate') {
+      <form class="accordion-body" [formGroup]="delegateForm" (ngSubmit)="submitDelegate()">
+        <p class="field-hint">この申請は上司による代理申請のため、承認は人事が行います。</p>
+
+        <div class="field">
+          <label for="delegate-training">研修</label>
+          <select id="delegate-training" class="input" formControlName="training_id">
+            <option [value]="0">選択してください</option>
+            @for (training of trainings(); track training.id) {
+              <option [value]="training.id">{{ training.title }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="delegate-scope">対象</label>
+          <select id="delegate-scope" class="input" formControlName="scope" style="max-width: 200px">
+            <option value="individual">部下を個別に指定</option>
+            <option value="department">自部署の部下に一括</option>
+          </select>
+        </div>
+
+        @if (delegateForm.value.scope === 'individual') {
+          <div class="field">
+            <label for="delegate-employee">部下</label>
+            <select id="delegate-employee" class="input" formControlName="employee_id">
+              <option [value]="0">選択してください</option>
+              @for (subordinate of subordinates(); track subordinate.id) {
+                <option [value]="subordinate.id">{{ subordinate.name }}（{{ subordinate.employee_code }}）</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="delegate-reason">申請理由（任意）</label>
+            <textarea id="delegate-reason" class="input" formControlName="reason"></textarea>
+          </div>
+          <div class="field">
+            <label for="delegate-due">希望期限（任意）</label>
+            <input id="delegate-due" class="input" type="date" formControlName="due_at" style="max-width: 200px" />
+          </div>
+        } @else {
+          <p class="field-hint">自分の部署に所属する、自分の部下（在籍中）全員が対象になります。</p>
+        }
+
+        @if (delegateMessage()) {
+          <p class="muted">{{ delegateMessage() }}</p>
+        }
+
+        @if (delegateForm.value.scope === 'individual') {
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!delegateForm.value.training_id || !delegateForm.value.employee_id || delegateSubmitting()"
+          >
+            申請する
+          </button>
+        } @else {
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!delegateForm.value.training_id || delegateSubmitting()"
+          >
+            一括で申請する
+          </button>
+        }
+      </form>
+    }
+  </div>
+}
+
+@if (loading()) {
+  <p class="muted">読み込み中…</p>
+} @else if (requests().length === 0) {
+  <p class="muted">申請はありません。</p>
+} @else {
+  @if (selectedIds().size > 0) {
+    <div class="panel actions" style="align-items: center">
+      <span>{{ selectedIds().size }}件選択中</span>
+      <button type="button" class="btn btn-primary btn-small" [disabled]="bulkApproving()" (click)="bulkApprove()">
+        選択した申請をまとめて承認
+      </button>
+      @if (bulkApproveMessage()) {
+        <span class="muted">{{ bulkApproveMessage() }}</span>
+      }
+    </div>
+  }
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        @if (showEmployeeColumn()) {
+          <th>申請者</th>
+        }
+        <th>研修</th>
+        <th>ステータス</th>
+        <th>申請理由</th>
+        <th>希望期限</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (request of requests(); track request.id) {
+        <tr>
+          <td>
+            @if (isSelectable(request)) {
+              <input
+                type="checkbox"
+                [checked]="isSelected(request.id)"
+                (change)="toggleSelect(request.id)"
+                [attr.aria-label]="'選択: ' + (request.training?.title ?? '')"
+              />
+            }
+          </td>
+          @if (showEmployeeColumn()) {
+            <td>{{ request.employee_name }}</td>
+          }
+          <td>
+            <a [routerLink]="['/trainings', request.training?.id]">{{ request.training?.title }}</a>
+            @if (!request.is_self_requested) {
+              <div class="muted" style="font-size: 12px">
+                {{ request.requested_by_name }}からの代理申請@if (request.status === 'pending') {（人事の承認が必要）}
+              </div>
+            }
+            @if (request.already_enrolled && request.status === 'pending') {
+              <div class="muted" style="font-size: 12px">（既に受講登録済み）</div>
+            }
+          </td>
+          <td>
+            <span
+              class="badge"
+              [class.badge-success]="request.status === 'approved'"
+              [class.badge-accent]="request.status === 'rejected'"
+            >
+              {{ requestStatusLabel(request.status) }}
+            </span>
+            @if (request.status === 'rejected' && request.decision_comment) {
+              <div class="muted" style="font-size: 12px">{{ request.decision_comment }}</div>
+            }
+          </td>
+          <td>{{ request.reason ?? '—' }}</td>
+          <td>{{ request.due_at ?? '—' }}</td>
+          <td>
+            @if (request.can_decide) {
+              <button
+                type="button"
+                class="btn btn-small btn-primary"
+                [disabled]="actioningId() === request.id"
+                (click)="approve(request.id)"
+              >
+                承認
+              </button>
+              <button
+                type="button"
+                class="btn btn-small"
+                [disabled]="actioningId() === request.id"
+                (click)="reject(request.id)"
+              >
+                却下
+              </button>
+            }
+            @if (request.can_cancel) {
+              <button
+                type="button"
+                class="btn btn-small btn-danger"
+                [disabled]="actioningId() === request.id"
+                (click)="cancel(request.id)"
+              >
+                取消
+              </button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

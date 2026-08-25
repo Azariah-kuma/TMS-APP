@@ -38,11 +38,24 @@ export const routes: Routes = [
           import('./features/trainings/enrollment-list/enrollment-list').then((m) => m.EnrollmentList),
       },
       {
+        path: 'training-requests',
+        loadComponent: () =>
+          import('./features/trainings/training-request-list/training-request-list').then(
+            (m) => m.TrainingRequestList,
+          ),
+      },
+      {
         path: 'enrollments/:id',
         loadComponent: () =>
           import('./features/trainings/enrollment-detail/enrollment-detail').then(
             (m) => m.EnrollmentDetail,
           ),
+      },
+      {
+        path: 'reports',
+        canActivate: [hrGuard],
+        loadComponent: () =>
+          import('./features/reports/report-dashboard/report-dashboard').then((m) => m.ReportDashboard),
       },
       {
         path: 'departments',

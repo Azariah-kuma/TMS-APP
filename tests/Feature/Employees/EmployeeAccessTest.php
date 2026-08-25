@@ -7,6 +7,42 @@ use App\Models\Department;
 use App\Models\Position;
 use Laravel\Sanctum\Sanctum;
 
+it('上司は自分の部下一覧（間接的な部下を含む）を取得できる', function () {
+    $manager = createEmployeeWithAssignment();
+    $subordinate = createEmployeeWithAssignment(assignmentAttributes: ['manager_id' => $manager->id]);
+    $grandchild = createEmployeeWithAssignment(assignmentAttributes: ['manager_id' => $subordinate->id]);
+    $unrelated = createEmployeeWithAssignment();
+
+    Sanctum::actingAs($manager->user);
+
+    $ids = collect($this->getJson('/api/employees/subordinates')->assertOk()->json())->pluck('id')->sort()->values();
+
+    expect($ids->all())->toBe(collect([$subordinate->id, $grandchild->id])->sort()->values()->all());
+});
+
+it('退職済みの部下は一覧に含まれない', function () {
+    $manager = createEmployeeWithAssignment();
+    $active = createEmployeeWithAssignment(assignmentAttributes: ['manager_id' => $manager->id]);
+    $retired = createEmployeeWithAssignment(
+        ['retired_at' => now()->subDay()],
+        ['manager_id' => $manager->id],
+    );
+
+    Sanctum::actingAs($manager->user);
+
+    $ids = collect($this->getJson('/api/employees/subordinates')->assertOk()->json())->pluck('id');
+
+    expect($ids->all())->toBe([$active->id]);
+});
+
+it('部下を持たない従業員は空の部下一覧が返る', function () {
+    $employee = createEmployeeWithAssignment();
+
+    Sanctum::actingAs($employee->user);
+
+    $this->getJson('/api/employees/subordinates')->assertOk()->assertJsonCount(0);
+});
+
 it('人事はどの従業員でも閲覧できる', function () {
     $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
     $someone = createEmployeeWithAssignment();

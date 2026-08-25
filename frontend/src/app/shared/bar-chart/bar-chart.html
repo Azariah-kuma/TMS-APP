@@ -1,0 +1,21 @@
+<div class="chart-legend">
+  <span><span class="chart-legend-swatch chart-segment-not-started"></span>未着手</span>
+  <span><span class="chart-legend-swatch chart-segment-in-progress"></span>受講中</span>
+  <span><span class="chart-legend-swatch chart-segment-completed"></span>完了</span>
+</div>
+
+@if (rows().length === 0) {
+  <p class="muted">データがありません。</p>
+} @else {
+  @for (row of rows(); track row.label) {
+    <div class="chart-row">
+      <div class="chart-label">{{ row.label }}</div>
+      <div class="chart-bar">
+        <div class="chart-segment-not-started" [style.width.%]="percent(row.not_started, row)"></div>
+        <div class="chart-segment-in-progress" [style.width.%]="percent(row.in_progress, row)"></div>
+        <div class="chart-segment-completed" [style.width.%]="percent(row.completed, row)"></div>
+      </div>
+      <div class="chart-total">{{ total(row) }}名</div>
+    </div>
+  }
+}

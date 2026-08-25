@@ -15,6 +15,7 @@ use App\Http\Requests\Employees\StoreEmployeeRequest;
 use App\Http\Resources\EmployeeResource;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -29,6 +30,24 @@ final class EmployeeController extends Controller
         Gate::authorize('viewAny', Employee::class);
 
         $employees = Employee::query()
+            ->with(['user', 'currentAssignment.department', 'currentAssignment.position'])
+            ->withExists('currentDirectReportAssignments as is_manager')
+            ->get();
+
+        return response()->json(EmployeeResource::collection($employees));
+    }
+
+    /**
+     * ログイン中の従業員の部下一覧（直接・間接、有効な委任経由を含む）。
+     */
+    public function subordinates(Request $request): JsonResponse
+    {
+        $actor = $request->user()->employee;
+        abort_if($actor === null, Response::HTTP_FORBIDDEN);
+
+        $employees = Employee::query()
+            ->whereIn('id', $actor->subordinateIds())
+            ->whereNull('retired_at')
             ->with(['user', 'currentAssignment.department', 'currentAssignment.position'])
             ->withExists('currentDirectReportAssignments as is_manager')
             ->get();

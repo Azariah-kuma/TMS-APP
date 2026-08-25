@@ -16,14 +16,15 @@ export class EnrollmentList implements OnInit {
   private readonly auth = inject(AuthService);
 
   readonly statusLabel = statusLabel;
-  readonly currentEmployeeId = this.auth.currentEmployee()?.id;
+  /** ログイン中の従業員IDへの参照は、user()の更新に追従できるよう都度算出する。 */
+  readonly currentEmployeeId = computed(() => this.auth.currentEmployee()?.id);
 
   readonly enrollments = signal<TrainingEnrollment[]>([]);
   readonly loading = signal(true);
 
   /** 自分以外の受講記録が含まれる（=上司または人事として見ている）場合のみ対象者列を表示する。 */
   readonly showEmployeeColumn = computed(() =>
-    this.enrollments().some((e) => e.employee_id !== this.currentEmployeeId),
+    this.enrollments().some((e) => e.employee_id !== this.currentEmployeeId()),
   );
 
   ngOnInit(): void {

@@ -34,6 +34,11 @@ class Training extends Model
         return $this->hasMany(TrainingEnrollment::class);
     }
 
+    public function trainingRequests(): HasMany
+    {
+        return $this->hasMany(TrainingRequest::class);
+    }
+
     /** この研修を構成するLesson一覧（表示順）。 */
     public function lessons(): HasMany
     {

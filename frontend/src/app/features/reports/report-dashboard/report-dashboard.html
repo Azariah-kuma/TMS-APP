@@ -1,0 +1,18 @@
+<div class="page-header">
+  <h1>レポート</h1>
+  <a class="btn" [href]="csvExportUrl" target="_blank" rel="noopener">CSVダウンロード</a>
+</div>
+
+@if (loading()) {
+  <p class="muted">読み込み中…</p>
+} @else if (report(); as r) {
+  <div class="panel">
+    <h2>研修別の受講状況</h2>
+    <app-bar-chart [rows]="toRows(r.by_training)" />
+  </div>
+
+  <div class="panel">
+    <h2>部署別の受講状況</h2>
+    <app-bar-chart [rows]="toRows(r.by_department)" />
+  </div>
+}
