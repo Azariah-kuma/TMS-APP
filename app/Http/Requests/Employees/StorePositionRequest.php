@@ -25,7 +25,7 @@ final class StorePositionRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:positions,code'],
-            'rank' => ['required', 'integer', 'min:0', 'max:65535'],
+            'after_position_id' => ['nullable', 'integer', 'exists:positions,id'],
         ];
     }
 }

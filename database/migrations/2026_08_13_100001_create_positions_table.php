@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('code')->unique();
-            // 役職の序列（数値が大きいほど上位）。昇格・降格の比較や表示順に利用する。
+            // 役職の序列（数値が小さいほど上位）。昇格・降格の比較や表示順に利用する。
             $table->unsignedSmallInteger('rank')->default(0);
             $table->timestamps();
         });

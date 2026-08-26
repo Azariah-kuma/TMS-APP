@@ -15,8 +15,14 @@
     </div>
 
     <div class="field">
-      <label for="rank">序列（数字が小さいほど上位）</label>
-      <input id="rank" class="input" type="number" formControlName="rank" style="max-width: 120px" />
+      <label for="after_position_id">挿入位置</label>
+      <select id="after_position_id" class="input" formControlName="after_position_id">
+        <option [value]="topOptionValue">先頭（最上位）</option>
+        @for (position of positions(); track position.id) {
+          <option [value]="position.id">{{ position.name }}の直後</option>
+        }
+      </select>
+      <p class="field-hint">既存の役職の間に割り込ませたい場合は、その直前の役職を選んでください。</p>
     </div>
 
     @if (error()) {
@@ -38,15 +44,61 @@
         <th>役職コード</th>
         <th>役職名</th>
         <th>序列</th>
+        @if (isHr()) {
+          <th></th>
+        }
       </tr>
     </thead>
     <tbody>
       @for (position of positions(); track position.id) {
-        <tr>
-          <td>{{ position.code }}</td>
-          <td>{{ position.name }}</td>
-          <td>{{ position.rank }}</td>
-        </tr>
+        @if (editingId() === position.id) {
+          <tr>
+            <td colspan="4">
+              <form class="field" style="display: flex; gap: 8px; align-items: flex-start" [formGroup]="editForm" (ngSubmit)="submitEdit(position.id)">
+                <div class="field" style="margin-bottom: 0">
+                  <label for="edit-name-{{ position.id }}">役職名</label>
+                  <input id="edit-name-{{ position.id }}" class="input" type="text" formControlName="name" />
+                </div>
+                <div class="field" style="margin-bottom: 0">
+                  <label for="edit-code-{{ position.id }}">役職コード</label>
+                  <input id="edit-code-{{ position.id }}" class="input" type="text" formControlName="code" />
+                </div>
+                <button type="submit" class="btn btn-small btn-primary" [disabled]="editForm.invalid || editSubmitting()">
+                  保存
+                </button>
+                <button type="button" class="btn btn-small" (click)="cancelEdit()">キャンセル</button>
+              </form>
+              @if (editError()) {
+                <p class="field-error">{{ editError() }}</p>
+              }
+            </td>
+          </tr>
+        } @else {
+          <tr>
+            <td>{{ position.code }}</td>
+            <td>{{ position.name }}</td>
+            <td>{{ position.rank }}</td>
+            @if (isHr()) {
+              <td>
+                <button type="button" class="btn btn-small" (click)="toggleActions(position.id)">操作</button>
+                @if (openActionsId() === position.id) {
+                  <button type="button" class="btn btn-small" (click)="startEdit(position)">編集</button>
+                  <button
+                    type="button"
+                    class="btn btn-small btn-danger"
+                    [disabled]="deletingId() === position.id"
+                    (click)="deletePosition(position)"
+                  >
+                    削除
+                  </button>
+                  @if (deleteError()) {
+                    <div class="field-error">{{ deleteError() }}</div>
+                  }
+                }
+              </td>
+            }
+          </tr>
+        }
       }
     </tbody>
   </table>

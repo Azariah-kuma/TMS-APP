@@ -23,7 +23,18 @@ export class MasterDataService {
     return this.http.get<Position[]>(`${this.apiUrl}/api/positions`);
   }
 
-  createPosition(payload: { name: string; code: string; rank: number }): Observable<Position> {
+  /** after_position_id を省略（null）すると最上位に挿入される。指定した役職の直後に挿入し、以降の序列は自動的に繰り下がる。 */
+  createPosition(payload: { name: string; code: string; after_position_id: number | null }): Observable<Position> {
     return this.http.post<Position>(`${this.apiUrl}/api/positions`, payload);
+  }
+
+  /** 誤登録した役職名・役職コードの訂正。序列(rank)は変更しない。 */
+  updatePosition(id: number, payload: { name: string; code: string }): Observable<Position> {
+    return this.http.patch<Position>(`${this.apiUrl}/api/positions/${id}`, payload);
+  }
+
+  /** 誤登録した役職の削除。配属履歴で使われている役職は削除できない（サーバー側でエラーになる）。 */
+  deletePosition(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/api/positions/${id}`);
   }
 }

@@ -24,12 +24,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
 
+    // 部署・役職・従業員
     Route::get('/departments', [DepartmentController::class, 'index']);
     Route::post('/departments', [DepartmentController::class, 'store']);
 
+    // 部署の階層構造を取得するAPI（ツリー形式）
     Route::get('/positions', [PositionController::class, 'index']);
     Route::post('/positions', [PositionController::class, 'store']);
+    Route::patch('/positions/{position}', [PositionController::class, 'update']);
+    Route::delete('/positions/{position}', [PositionController::class, 'destroy']);
 
+    // 従業員の一覧・詳細・作成・更新・削除
     Route::get('/employees', [EmployeeController::class, 'index']);
     Route::post('/employees', [EmployeeController::class, 'store']);
     // CSVファイルによる複数従業員の一括登録

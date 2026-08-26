@@ -35,3 +35,19 @@ it('従業員レコードのないユーザーは役職を新規作成できな�
 
     expect($user->can('create', Position::class))->toBeFalse();
 });
+
+it('人事は役職を更新・削除できる', function () {
+    $hr = Employee::factory()->hr()->create();
+    $position = Position::factory()->create();
+
+    expect($hr->user->can('update', $position))->toBeTrue()
+        ->and($hr->user->can('delete', $position))->toBeTrue();
+});
+
+it('一般社員は役職を更新・削除できない', function () {
+    $employee = Employee::factory()->create();
+    $position = Position::factory()->create();
+
+    expect($employee->user->can('update', $position))->toBeFalse()
+        ->and($employee->user->can('delete', $position))->toBeFalse();
+});
