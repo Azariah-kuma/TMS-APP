@@ -1,0 +1,31 @@
+# 本番Dockerビルド（docker/production/Dockerfile）に、
+# 開発環境（ホスト/Sail）で生成されたキャッシュ・依存物を混入させないための除外設定。
+
+.git
+.github
+
+vendor
+node_modules
+frontend/node_modules
+frontend/dist
+
+bootstrap/cache/*.php
+
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+!storage/logs/.gitignore
+!storage/framework/cache/.gitignore
+!storage/framework/sessions/.gitignore
+!storage/framework/testing/.gitignore
+!storage/framework/views/.gitignore
+
+.env
+.env.*
+!.env.example
+
+docs
+infra
+*.md

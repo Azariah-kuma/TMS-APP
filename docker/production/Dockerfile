@@ -21,8 +21,12 @@ RUN composer install \
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
-FROM php:8.3-fpm-alpine
+# composer.lockがsymfony/*系をv8.1系（PHP>=8.4.1必須）でロックしているため、
+# 開発環境（Sail）と同じ8.5系を使う。
+FROM php:8.5-fpm-alpine
 
+# opcacheはphp:8.5-fpm-alpineに標準搭載済み（php -mで確認済み）のため、
+# docker-php-ext-installの対象から除外する（含めるとビルド時にエラーになる）。
 RUN apk add --no-cache \
         nginx \
         supervisor \
@@ -35,7 +39,6 @@ RUN apk add --no-cache \
         pgsql \
         pcntl \
         bcmath \
-        opcache \
     && apk del $PHPIZE_DEPS
 
 # 本番向けPHP設定（OPcache有効化、エラー表示オフ）。
