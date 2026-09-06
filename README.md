@@ -78,8 +78,8 @@ flowchart LR
 ## システム構成
 
 Laravel API と Angular SPA を中心に、開発環境は Docker で構成しています。
-CI の実行基盤と運用設定は別リポジトリの Jenkins プロジェクトで管理し、
-このリポジトリの Jenkinsfile に定義したパイプラインを実行します。
+CI は GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で実行し、
+デプロイも GitHub Actions（[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)）から AWS へ行います。
 
 ```mermaid
 flowchart LR
@@ -94,15 +94,15 @@ flowchart LR
     end
 
     Source[Gitリポジトリ]
-    Jenkins[Jenkins<br>別リポジトリ]
+    Actions[GitHub Actions]
 
     User --> Angular
     Angular -->|Cookie認証・API通信| Laravel
     Laravel --> Auth
     Laravel --> DB
     Laravel --> Redis
-    Source -->|チェックアウト| Jenkins
-    Jenkins -->|テスト・静的解析・ビルド| App
+    Source -->|push/PR| Actions
+    Actions -->|テスト・静的解析・ビルド| App
 ```
 
 ## 認証フロー
@@ -126,7 +126,7 @@ sequenceDiagram
     Angular-->>User: 画面を表示
 ```
 
-## テスト / CI（Jenkins）
+## テスト / CI（GitHub Actions）
 
 - バックエンドは PCOV、フロントエンドは Vitest (`@vitest/coverage-v8`) を使ってカバレッジを計測します。
 - 実行コマンド:
@@ -136,9 +136,8 @@ make test-coverage            # storage/coverage/{html,clover.xml,cobertura.xml}
 make frontend-test-coverage   # frontend/coverage/frontend/{index.html,cobertura-coverage.xml}
 ```
 
-- [`Jenkinsfile`](Jenkinsfile) は同じコマンドを実行し、Cobertura 形式のレポートを Coverage プラグインに、JUnit 形式の結果を JUnit プラグインに渡します。
-- Jenkins エージェントには Docker（Compose v2）と Node.js が必要です。PHP 側は `compose.yaml` の Sail ランタイムを使うため、個別に PHP を導入する必要はありません。
-- CI 環境の構築・起動方法は [`tms-app-jenkins`](../tms-app-jenkins) を参照してください。
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml) が push / PR のたびに同等のコマンド（`php artisan test --coverage --min=100`・`pint --test`・`npm run build`・`npm test`）を実行します。
+- デプロイは [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)（`workflow_dispatch`による手動実行）から AWS（ECS/ECR/S3/CloudFront）へ行います。詳細は [`infra/terraform/`](infra/terraform) を参照してください。
 
 ## デバッグ（Xdebug / Debugbar）
 

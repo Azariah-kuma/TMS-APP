@@ -33,7 +33,15 @@ it('受講登録が作られると、本人に受講可能になった旨のメ�
 
     (new EnrollEmployeeInTrainingAction)->execute($employee, $training);
 
-    Notification::assertSentTo($employee->user, TrainingEnrollmentCreatedNotification::class);
+    Notification::assertSentTo(
+        $employee->user,
+        TrainingEnrollmentCreatedNotification::class,
+        function (TrainingEnrollmentCreatedNotification $notification) use ($employee, $training) {
+            $mail = $notification->toMail($employee->user);
+
+            return str_contains($mail->subject, $training->title);
+        },
+    );
 });
 
 it('同じ従業員を同じ研修に二重登録することは拒否される', function () {

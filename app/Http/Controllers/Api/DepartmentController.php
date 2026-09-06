@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\DepartmentInUseException;
+use App\Actions\Employees\DeleteDepartmentAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employees\StoreDepartmentRequest;
 use App\Http\Requests\Employees\UpdateDepartmentRequest;
@@ -41,19 +41,11 @@ final class DepartmentController extends Controller
     }
 
     /** 従業員の配属履歴、または研修の閲覧対象部署として一度でも使われている部署は削除できない。 */
-    public function destroy(Department $department): JsonResponse
+    public function destroy(Department $department, DeleteDepartmentAction $action): JsonResponse
     {
         Gate::authorize('delete', $department);
 
-        if ($department->assignments()->exists()) {
-            throw new DepartmentInUseException('この部署は従業員の配属履歴で使用されているため削除できません。');
-        }
-
-        if ($department->trainings()->exists()) {
-            throw new DepartmentInUseException('この部署は研修の閲覧対象部署として使用されているため削除できません。');
-        }
-
-        $department->delete();
+        $action->execute($department);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }

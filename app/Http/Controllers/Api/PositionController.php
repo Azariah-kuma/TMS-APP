@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Employees\DeletePositionAction;
 use App\Actions\Employees\InsertPositionAction;
-use App\Exceptions\PositionInUseException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employees\StorePositionRequest;
 use App\Http\Requests\Employees\UpdatePositionRequest;
@@ -48,15 +48,11 @@ final class PositionController extends Controller
     }
 
     /** 誤登録した役職の削除。従業員の配属履歴で一度でも使われている役職は削除できない。 */
-    public function destroy(Position $position): JsonResponse
+    public function destroy(Position $position, DeletePositionAction $action): JsonResponse
     {
         Gate::authorize('delete', $position);
 
-        if ($position->assignments()->exists()) {
-            throw new PositionInUseException('この役職は従業員の配属履歴で使用されているため削除できません。');
-        }
-
-        $position->delete();
+        $action->execute($position);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
