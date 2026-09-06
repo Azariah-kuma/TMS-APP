@@ -1,0 +1,112 @@
+name: Deploy (production)
+
+# 現時点では手動トリガーのみ（下準備段階）。
+# 実行するには、事前に以下をリポジトリのSecrets/Variablesに設定し、
+# infra/terraform/environments/production を一度 `terraform apply` しておく必要がある。
+#
+#   Secrets:
+#     AWS_DEPLOY_ROLE_ARN      … GitHub Actions用OIDCロールのARN（静的なアクセスキーは使わない）
+#   Variables:
+#     AWS_REGION                  … 例: ap-northeast-1
+#     ECR_REPOSITORY_URL          … terraform output ecr_repository_url の値
+#     ECS_CLUSTER_NAME            … terraform output ecs_cluster_name の値
+#     ECS_WEB_SERVICE_NAME        … terraform output ecs_web_service_name の値
+#     ECS_WORKER_SERVICE_NAME     … terraform output ecs_worker_service_name の値
+#     ECS_PRIVATE_SUBNET_IDS      … terraform output private_subnet_ids の値（カンマ区切り）
+#     ECS_TASKS_SECURITY_GROUP_ID … terraform output ecs_tasks_security_group_id の値
+#     FRONTEND_BUCKET_NAME        … terraform output frontend_bucket_name の値
+#     FRONTEND_DISTRIBUTION_ID    … terraform output frontend_cloudfront_distribution_id の値
+#
+# AWS側では、GitHubのOIDCプロバイダを信頼するIAMロール（AWS_DEPLOY_ROLE_ARN）を
+# 別途作成し、ECR push・ECS update-service・S3 sync・CloudFront invalidation に
+# 必要な権限を付与しておくこと（Terraformでの管理は今後の課題）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'ECRにpushするイメージタグ（省略時はコミットSHA）'
+        required: false
+        default: ''
+
+permissions:
+  id-token: write # OIDCでAWSの認証情報を取得するために必要
+  contents: read
+
+jobs:
+  deploy-backend:
+    name: Build & deploy backend (ECR/ECS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: echo "value=${{ inputs.image_tag || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        run: |
+          docker build -f docker/production/Dockerfile \
+            -t "${{ vars.ECR_REPOSITORY_URL }}:${{ steps.tag.outputs.value }}" \
+            -t "${{ vars.ECR_REPOSITORY_URL }}:latest" \
+            .
+          docker push "${{ vars.ECR_REPOSITORY_URL }}:${{ steps.tag.outputs.value }}"
+          docker push "${{ vars.ECR_REPOSITORY_URL }}:latest"
+
+      - name: Run database migrations
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster "${{ vars.ECS_CLUSTER_NAME }}" \
+            --services "${{ vars.ECS_WEB_SERVICE_NAME }}" \
+            --query 'services[0].taskDefinition' --output text)
+
+          aws ecs run-task \
+            --cluster "${{ vars.ECS_CLUSTER_NAME }}" \
+            --task-definition "$TASK_DEF_ARN" \
+            --launch-type FARGATE \
+            --overrides '{"containerOverrides":[{"name":"web","command":["php","artisan","migrate","--force"]}]}' \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ vars.ECS_PRIVATE_SUBNET_IDS }}],securityGroups=[${{ vars.ECS_TASKS_SECURITY_GROUP_ID }}],assignPublicIp=DISABLED}"
+
+      - name: Force new deployment (web / worker)
+        run: |
+          aws ecs update-service --cluster "${{ vars.ECS_CLUSTER_NAME }}" --service "${{ vars.ECS_WEB_SERVICE_NAME }}" --force-new-deployment
+          aws ecs update-service --cluster "${{ vars.ECS_CLUSTER_NAME }}" --service "${{ vars.ECS_WORKER_SERVICE_NAME }}" --force-new-deployment
+
+  deploy-frontend:
+    name: Build & deploy frontend (S3/CloudFront)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run build -- --configuration production
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Sync to S3
+        run: aws s3 sync dist/frontend/browser "s3://${{ vars.FRONTEND_BUCKET_NAME }}" --delete
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id "${{ vars.FRONTEND_DISTRIBUTION_ID }}" --paths "/*"

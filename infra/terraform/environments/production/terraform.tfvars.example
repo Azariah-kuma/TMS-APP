@@ -1,0 +1,26 @@
+# このファイルを terraform.tfvars にコピーし、実際の値に書き換えてから使う。
+# terraform.tfvars 自体は .gitignore 済みでコミットされない（機密ではないが、
+# 環境固有の値なのでリポジトリに含めない方針）。
+
+hosted_zone_domain  = "example.com"
+api_domain_name     = "api.tms.example.com"
+app_domain_name     = "tms.example.com"
+storage_domain_name = "files.tms.example.com"
+mail_domain         = "tms.example.com"
+
+# S3バケット名はグローバルで一意である必要があるため、組織名などを含めて調整すること。
+app_storage_bucket_name = "tms-app-production-storage"
+frontend_bucket_name    = "tms-app-production-frontend"
+
+# 初回applyではECRにイメージが無いため、CI/CDで最初のイメージをpushしてから
+# このタグに更新し、ECSサービスを更新する運用を想定（詳細はREADME参照）。
+image_tag = "latest"
+
+# コストとのバランスを見て調整する。
+db_instance_class    = "db.t4g.micro"
+db_multi_az          = false
+web_desired_count    = 2
+web_min_count        = 2
+web_max_count         = 6
+worker_desired_count  = 1
+single_nat_gateway    = true

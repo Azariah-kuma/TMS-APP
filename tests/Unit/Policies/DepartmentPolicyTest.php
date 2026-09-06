@@ -35,3 +35,19 @@ it('従業員レコードのないユーザーは部署を新規作成できな�
 
     expect($user->can('create', Department::class))->toBeFalse();
 });
+
+it('人事は部署を更新・削除できる', function () {
+    $hr = Employee::factory()->hr()->create();
+    $department = Department::factory()->create();
+
+    expect($hr->user->can('update', $department))->toBeTrue()
+        ->and($hr->user->can('delete', $department))->toBeTrue();
+});
+
+it('一般社員は部署を更新・削除できない', function () {
+    $employee = Employee::factory()->create();
+    $department = Department::factory()->create();
+
+    expect($employee->user->can('update', $department))->toBeFalse()
+        ->and($employee->user->can('delete', $department))->toBeFalse();
+});

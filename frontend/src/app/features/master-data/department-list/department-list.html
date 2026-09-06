@@ -32,14 +32,65 @@
       <tr>
         <th>部署コード</th>
         <th>部署名</th>
+        @if (isHr()) {
+          <th></th>
+        }
       </tr>
     </thead>
     <tbody>
       @for (department of departments(); track department.id) {
-        <tr>
-          <td>{{ department.code }}</td>
-          <td>{{ department.name }}</td>
-        </tr>
+        @if (editingId() === department.id) {
+          <tr>
+            <td colspan="3">
+              <form
+                class="field"
+                style="display: flex; gap: 8px; align-items: flex-start"
+                [formGroup]="editForm"
+                (ngSubmit)="submitEdit(department.id)"
+              >
+                <div class="field" style="margin-bottom: 0">
+                  <label for="edit-name-{{ department.id }}">部署名</label>
+                  <input id="edit-name-{{ department.id }}" class="input" type="text" formControlName="name" />
+                </div>
+                <div class="field" style="margin-bottom: 0">
+                  <label for="edit-code-{{ department.id }}">部署コード</label>
+                  <input id="edit-code-{{ department.id }}" class="input" type="text" formControlName="code" />
+                </div>
+                <button type="submit" class="btn btn-small btn-primary" [disabled]="editForm.invalid || editSubmitting()">
+                  保存
+                </button>
+                <button type="button" class="btn btn-small" (click)="cancelEdit()">キャンセル</button>
+              </form>
+              @if (editError()) {
+                <p class="field-error">{{ editError() }}</p>
+              }
+            </td>
+          </tr>
+        } @else {
+          <tr>
+            <td>{{ department.code }}</td>
+            <td>{{ department.name }}</td>
+            @if (isHr()) {
+              <td>
+                <button type="button" class="btn btn-small" (click)="toggleActions(department.id)">操作</button>
+                @if (openActionsId() === department.id) {
+                  <button type="button" class="btn btn-small" (click)="startEdit(department)">編集</button>
+                  <button
+                    type="button"
+                    class="btn btn-small btn-danger"
+                    [disabled]="deletingId() === department.id"
+                    (click)="deleteDepartment(department)"
+                  >
+                    削除
+                  </button>
+                  @if (deleteError()) {
+                    <div class="field-error">{{ deleteError() }}</div>
+                  }
+                }
+              </td>
+            }
+          </tr>
+        }
       }
     </tbody>
   </table>

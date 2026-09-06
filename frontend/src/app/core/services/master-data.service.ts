@@ -19,6 +19,16 @@ export class MasterDataService {
     return this.http.post<Department>(`${this.apiUrl}/api/departments`, payload);
   }
 
+  /** 統合・組織変更に伴う部署名・部署コードの訂正。 */
+  updateDepartment(id: number, payload: { name: string; code: string }): Observable<Department> {
+    return this.http.patch<Department>(`${this.apiUrl}/api/departments/${id}`, payload);
+  }
+
+  /** 部署の削除。配属履歴や研修の閲覧対象で使われている部署は削除できない（サーバー側でエラーになる）。 */
+  deleteDepartment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/api/departments/${id}`);
+  }
+
   positions(): Observable<Position[]> {
     return this.http.get<Position[]>(`${this.apiUrl}/api/positions`);
   }

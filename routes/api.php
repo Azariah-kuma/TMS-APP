@@ -27,6 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // 部署・役職・従業員
     Route::get('/departments', [DepartmentController::class, 'index']);
     Route::post('/departments', [DepartmentController::class, 'store']);
+    Route::patch('/departments/{department}', [DepartmentController::class, 'update']);
+    Route::delete('/departments/{department}', [DepartmentController::class, 'destroy']);
 
     // 部署の階層構造を取得するAPI（ツリー形式）
     Route::get('/positions', [PositionController::class, 'index']);

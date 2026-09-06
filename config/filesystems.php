@@ -38,13 +38,25 @@ return [
             'report' => false,
         ],
 
+        // 研修Lessonの教材ファイル等、公開URLで参照する必要があるファイルの保存先。
+        // ローカル環境では 'local' ドライバ（storage/app/public を公開シンボリックリンク経由で配信）、
+        // 本番環境ではFILESYSTEM_PUBLIC_DRIVER=s3を設定し、S3+CloudFront経由で配信する
+        // （infra/terraform/modules/storage を参照）。
         'public' => [
-            'driver' => 'local',
+            'driver' => env('FILESYSTEM_PUBLIC_DRIVER', 'local'),
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => env('FILESYSTEM_PUBLIC_URL', rtrim(env('APP_URL', 'http://localhost'), '/').'/storage'),
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+
+            // driverが's3'の場合のみ使用される（'local'の場合は無視される）。
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
         ],
 
         's3' => [

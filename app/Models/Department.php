@@ -26,4 +26,10 @@ class Department extends Model
     {
         return $this->hasMany(EmployeeAssignment::class);
     }
+
+    /** この部署を閲覧対象者（audience_department_id）に指定している研修一覧。 */
+    public function trainings(): HasMany
+    {
+        return $this->hasMany(Training::class, 'audience_department_id');
+    }
 }
