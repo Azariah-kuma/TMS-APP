@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { TrainingEnrollmentService } from '../../../core/services/training-enrollment.service';
 import { TrainingEnrollment } from '../../../core/models/training-enrollment';
+import { TrainingLesson } from '../../../core/models/training-lesson';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { statusLabel } from '../../../shared/status-label';
 
@@ -44,6 +45,11 @@ export class EnrollmentDetail implements OnInit {
       this.manualProgress.set(enrollment.progress);
       this.loading.set(false);
     });
+  }
+
+  /** 添付教材のいずれかが動画であれば、そのLessonは動画視聴完了で自動的に完了扱いにする表示にする。 */
+  hasVideoAttachment(lesson: TrainingLesson): boolean {
+    return lesson.attachments.some((attachment) => attachment.mime_type.startsWith('video/'));
   }
 
   isLessonCompleted(lessonId: number): boolean {

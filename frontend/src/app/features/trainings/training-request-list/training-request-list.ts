@@ -89,6 +89,19 @@ export class TrainingRequestList implements OnInit {
     });
   }
 
+  /** 多段階承認の申請のみ、承認待ちの進捗（例: 2段階中1段階目 承認済み）を短い文字列にする。 */
+  stageProgressLabel(request: TrainingRequest): string | null {
+    if (request.required_approval_stages <= 1) {
+      return null;
+    }
+
+    if (request.status !== 'pending') {
+      return `${request.required_approval_stages}段階中${request.approval_history.length}段階承認済み`;
+    }
+
+    return `${request.required_approval_stages}段階中${request.current_approval_stage}段階目が承認待ち`;
+  }
+
   isSelectable(request: TrainingRequest): boolean {
     return request.can_decide && request.status === 'pending';
   }

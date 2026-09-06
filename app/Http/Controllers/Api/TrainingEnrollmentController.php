@@ -33,7 +33,7 @@ final class TrainingEnrollmentController extends Controller
 
         $enrollments = TrainingEnrollment::query()
             ->visibleTo($request->user()->employee)
-            ->with(['training.lessons', 'employee.user', 'lessonCompletions'])
+            ->with(['training.lessons.attachments', 'employee.user', 'lessonCompletions'])
             ->get();
 
         return response()->json(TrainingEnrollmentResource::collection($enrollments));
@@ -43,7 +43,7 @@ final class TrainingEnrollmentController extends Controller
     {
         Gate::authorize('view', $trainingEnrollment);
 
-        return response()->json(new TrainingEnrollmentResource($trainingEnrollment->load(['training.lessons', 'lessonCompletions'])));
+        return response()->json(new TrainingEnrollmentResource($trainingEnrollment->load(['training.lessons.attachments', 'lessonCompletions'])));
     }
 
     /** 研修の割り当て（受講登録）を行う。 */
@@ -61,7 +61,7 @@ final class TrainingEnrollmentController extends Controller
         );
 
         return response()->json(
-            new TrainingEnrollmentResource($enrollment->load(['training.lessons', 'lessonCompletions'])),
+            new TrainingEnrollmentResource($enrollment->load(['training.lessons.attachments', 'lessonCompletions'])),
             Response::HTTP_CREATED,
         );
     }
@@ -94,7 +94,7 @@ final class TrainingEnrollmentController extends Controller
     ): JsonResponse {
         $enrollment = $action->execute($trainingEnrollment, (int) $request->validated('progress'));
 
-        return response()->json(new TrainingEnrollmentResource($enrollment->load(['training.lessons', 'lessonCompletions'])));
+        return response()->json(new TrainingEnrollmentResource($enrollment->load(['training.lessons.attachments', 'lessonCompletions'])));
     }
 
     public function destroy(TrainingEnrollment $trainingEnrollment): JsonResponse

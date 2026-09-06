@@ -292,3 +292,59 @@ it('部下がいない一般社員は部署一括申請を拒否される', func
     $this->postJson("/api/trainings/{$training->id}/bulk-request", ['department_id' => $department])
         ->assertForbidden();
 });
+
+it('多段階承認が必要な研修は、部長→役員の順に承認されないと最終承認にならない', function () {
+    $executive = createEmployeeWithAssignment();
+    $manager = createEmployeeWithAssignment([], ['manager_id' => $executive->id]);
+    $employee = createEmployeeWithAssignment([], ['manager_id' => $manager->id]);
+    $training = Training::factory()->create([
+        'requires_multistage_approval' => true,
+        'approval_stage_count' => 2,
+    ]);
+
+    Sanctum::actingAs($employee->user);
+    $this->postJson('/api/training-requests', ['training_id' => $training->id])->assertCreated();
+    $request = TrainingRequest::where('employee_id', $employee->id)->firstOrFail();
+
+    // 1段階目: 直属の上司（部長役）が承認しても、まだ承認待ちのまま。
+    Sanctum::actingAs($manager->user);
+    $this->postJson("/api/training-requests/{$request->id}/approve")
+        ->assertOk()
+        ->assertJsonPath('status', 'pending')
+        ->assertJsonPath('current_approval_stage', 2)
+        ->assertJsonPath('approval_history.0.stage_number', 1);
+
+    // 部長自身は2段階目を承認できない（既に決裁済みのため）。
+    $this->postJson("/api/training-requests/{$request->id}/approve")->assertForbidden();
+
+    // 2段階目: 部長の上司（役員役）が承認して、初めて確定する。
+    Sanctum::actingAs($executive->user);
+    $this->postJson("/api/training-requests/{$request->id}/approve")
+        ->assertOk()
+        ->assertJsonPath('status', 'approved')
+        ->assertJsonPath('approval_history.1.stage_number', 2);
+
+    $enrollmentIds = collect($this->getJson('/api/training-enrollments')->assertOk()->json())->pluck('training.id');
+    expect($enrollmentIds->all())->toBe([$training->id]);
+});
+
+it('多段階承認が必要な研修は、途中の段階で却下されると残りの段階を待たずに却下確定する', function () {
+    $manager = createEmployeeWithAssignment();
+    $employee = createEmployeeWithAssignment([], ['manager_id' => $manager->id]);
+    $training = Training::factory()->create([
+        'requires_multistage_approval' => true,
+        'approval_stage_count' => 2,
+    ]);
+    $request = TrainingRequest::factory()->multistage(2)->create([
+        'employee_id' => $employee->id,
+        'requested_by_employee_id' => $employee->id,
+        'training_id' => $training->id,
+    ]);
+
+    Sanctum::actingAs($manager->user);
+
+    $this->postJson("/api/training-requests/{$request->id}/reject", ['comment' => '今回は見送り'])
+        ->assertOk()
+        ->assertJsonPath('status', 'rejected')
+        ->assertJsonPath('decision_comment', '今回は見送り');
+});

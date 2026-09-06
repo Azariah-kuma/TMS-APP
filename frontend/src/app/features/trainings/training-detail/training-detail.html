@@ -65,18 +65,20 @@
             <tr>
               <td>
                 {{ lesson.title }}
-                @if (lesson.content_url; as url) {
-                  <div style="margin-top: 4px">
-                    @if (lesson.content_mime_type?.startsWith('video/')) {
-                      <video [src]="url" controls style="max-width: 320px; display: block"></video>
-                    } @else {
-                      <a [href]="url" target="_blank" rel="noopener">
-                        {{ lesson.content_original_name ?? '教材を開く' }}
-                      </a>
-                    }
-                  </div>
-                } @else {
+                @if (!lesson.attachments || lesson.attachments.length === 0) {
                   <span class="muted" style="margin-left: 8px">（教材未添付）</span>
+                } @else {
+                  @for (attachment of lesson.attachments; track attachment.id) {
+                    <div style="margin-top: 4px">
+                      @if (attachment.mime_type.startsWith('video/')) {
+                        <video [src]="attachment.url" controls style="max-width: 320px; display: block"></video>
+                      } @else {
+                        <a [href]="attachment.url" target="_blank" rel="noopener">
+                          {{ attachment.original_name }}
+                        </a>
+                      }
+                    </div>
+                  }
                 }
               </td>
               @if (isHr()) {
@@ -104,12 +106,13 @@
           <input
             class="input"
             type="file"
+            multiple
             accept="video/*,.pdf,.ppt,.pptx,.doc,.docx,image/*"
             (change)="onLessonContentSelected($event)"
           />
           <button type="submit" class="btn" [disabled]="lessonForm.invalid || lessonSubmitting()">追加</button>
         </div>
-        <p class="field-hint">教材ファイル（動画・PDF・スライド等、任意、最大100MB）を添付できます。</p>
+        <p class="field-hint">教材ファイル（動画・PDF・スライド等、任意、複数選択可、1ファイルあたり最大100MB）を添付できます。</p>
         @if (lessonError()) {
           <p class="field-error">{{ lessonError() }}</p>
         }

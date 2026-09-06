@@ -6,6 +6,7 @@ use App\Models\Delegation;
 use App\Models\Employee;
 use App\Models\EmployeeAssignment;
 use App\Models\TrainingRequest;
+use App\Models\TrainingRequestApprovalStage;
 use App\Models\User;
 
 it('従業員なら誰でも申請一覧を要求できる', function () {
@@ -234,4 +235,39 @@ it('従業員レコードのないユーザーは申請を取り消せない', f
     $request = TrainingRequest::factory()->create();
 
     expect($user->can('cancel', $request))->toBeFalse();
+});
+
+it('多段階承認の1段階目は、申請対象本人の上司が承認・却下できる', function () {
+    $manager = Employee::factory()->create();
+    $subordinate = Employee::factory()->create();
+    EmployeeAssignment::factory()->create(['employee_id' => $subordinate->id, 'manager_id' => $manager->id]);
+    $request = TrainingRequest::factory()->multistage(2)->create(['employee_id' => $subordinate->id]);
+
+    expect($manager->user->can('approve', $request))->toBeTrue()
+        ->and($manager->user->can('reject', $request))->toBeTrue();
+});
+
+it('多段階承認の2段階目は、1段階目の決裁者の上司でなければ承認・却下できない', function () {
+    $manager = Employee::factory()->create();
+    $subordinate = Employee::factory()->create();
+    EmployeeAssignment::factory()->create(['employee_id' => $subordinate->id, 'manager_id' => $manager->id]);
+    $request = TrainingRequest::factory()->multistage(2)->create([
+        'employee_id' => $subordinate->id,
+        'current_approval_stage' => 2,
+    ]);
+    TrainingRequestApprovalStage::factory()->create([
+        'training_request_id' => $request->id,
+        'stage_number' => 1,
+        'decided_by_employee_id' => $manager->id,
+    ]);
+
+    // 1段階目を決裁した本人（部長役）はもう決裁者ではない。
+    expect($manager->user->can('approve', $request))->toBeFalse();
+
+    $executive = Employee::factory()->create();
+    EmployeeAssignment::factory()->create(['employee_id' => $manager->id, 'manager_id' => $executive->id]);
+
+    // 1段階目の決裁者(部長)の上司(役員)が2段階目を承認・却下できる。
+    expect($executive->user->can('approve', $request))->toBeTrue()
+        ->and($executive->user->can('reject', $request))->toBeTrue();
 });

@@ -37,7 +37,7 @@ final class TrainingRequestController extends Controller
 
         $trainingRequests = TrainingRequest::query()
             ->visibleTo($request->user()->employee)
-            ->with(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user'])
+            ->with(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user', 'approvalHistory.decidedBy.user'])
             ->latest()
             ->get();
 
@@ -49,7 +49,7 @@ final class TrainingRequestController extends Controller
         Gate::authorize('view', $trainingRequest);
 
         return response()->json(
-            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user'])),
+            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user', 'approvalHistory.decidedBy.user'])),
         );
     }
 
@@ -72,7 +72,7 @@ final class TrainingRequestController extends Controller
         );
 
         return response()->json(
-            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user'])),
+            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'approvalHistory.decidedBy.user'])),
             Response::HTTP_CREATED,
         );
     }
@@ -101,7 +101,7 @@ final class TrainingRequestController extends Controller
         $trainingRequest = $action->execute($trainingRequest, $request->user()->employee);
 
         return response()->json(
-            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user'])),
+            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user', 'approvalHistory.decidedBy.user'])),
         );
     }
 
@@ -143,7 +143,7 @@ final class TrainingRequestController extends Controller
         );
 
         return response()->json(
-            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user'])),
+            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'decidedBy.user', 'approvalHistory.decidedBy.user'])),
         );
     }
 
@@ -155,7 +155,7 @@ final class TrainingRequestController extends Controller
         $trainingRequest = $action->execute($trainingRequest);
 
         return response()->json(
-            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user'])),
+            new TrainingRequestResource($trainingRequest->load(['training', 'employee.user', 'requestedBy.user', 'approvalHistory.decidedBy.user'])),
         );
     }
 }

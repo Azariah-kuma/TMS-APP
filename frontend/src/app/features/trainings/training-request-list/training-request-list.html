@@ -185,6 +185,16 @@
             @if (request.status === 'rejected' && request.decision_comment) {
               <div class="muted" style="font-size: 12px">{{ request.decision_comment }}</div>
             }
+            @if (stageProgressLabel(request); as progress) {
+              <div class="muted" style="font-size: 12px">{{ progress }}</div>
+              @for (stage of request.approval_history; track stage.stage_number) {
+                <div class="muted" style="font-size: 12px">
+                  {{ stage.stage_number }}段階目: {{ stage.decided_by_name }}が{{
+                    stage.status === 'approved' ? '承認' : '却下'
+                  }}
+                </div>
+              }
+            }
           </td>
           <td>{{ request.reason ?? '—' }}</td>
           <td>{{ request.due_at ?? '—' }}</td>

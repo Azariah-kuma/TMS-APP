@@ -11,14 +11,16 @@ use Illuminate\Http\UploadedFile;
 final class StoreTrainingLessonAction
 {
     /**
-     * 研修にLesson（教材）を追加する。$content が渡された場合は、動画・PDF等の
-     * 教材本体ファイルを public ディスクに保存し、Lessonに紐付ける。
+     * 研修にLesson（教材）を追加する。$contents が渡された場合は、動画・PDF等の
+     * 教材本体ファイルを public ディスクに保存し、複数までLessonに紐付ける。
+     *
+     * @param  list<UploadedFile>  $contents
      */
     public function execute(
         Training $training,
         string $title,
         ?int $position,
-        ?UploadedFile $content,
+        array $contents = [],
     ): TrainingLesson {
         $attributes = ['title' => $title];
 
@@ -26,12 +28,16 @@ final class StoreTrainingLessonAction
             $attributes['position'] = $position;
         }
 
-        if ($content !== null) {
-            $attributes['content_path'] = $content->store('training-lessons', 'public');
-            $attributes['content_original_name'] = $content->getClientOriginalName();
-            $attributes['content_mime_type'] = $content->getMimeType();
+        $lesson = $training->lessons()->create($attributes);
+
+        foreach ($contents as $content) {
+            $lesson->attachments()->create([
+                'path' => $content->store('training-lessons', 'public'),
+                'original_name' => $content->getClientOriginalName(),
+                'mime_type' => $content->getMimeType(),
+            ]);
         }
 
-        return $training->lessons()->create($attributes);
+        return $lesson->load('attachments');
     }
 }

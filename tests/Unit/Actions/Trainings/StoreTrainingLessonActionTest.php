@@ -14,12 +14,12 @@ it('教材を添付せずにLessonを作成できる', function () {
         training: $training,
         title: '第1章 イントロダクション',
         position: 1,
-        content: null,
+        contents: [],
     );
 
     expect($lesson->title)->toBe('第1章 イントロダクション')
         ->and($lesson->position)->toBe(1)
-        ->and($lesson->content_path)->toBeNull();
+        ->and($lesson->attachments)->toBeEmpty();
 });
 
 it('アップロードされた教材ファイルをpublicディスクに保存し、メタデータを記録する', function () {
@@ -32,12 +32,40 @@ it('アップロードされた教材ファイルをpublicディスクに保存�
         training: $training,
         title: '第1章 講義動画',
         position: null,
-        content: $video,
+        contents: [$video],
     );
 
-    expect($lesson->content_path)->not->toBeNull()
-        ->and($lesson->content_original_name)->toBe('lesson.mp4')
-        ->and($lesson->content_mime_type)->toBe('video/mp4');
+    expect($lesson->attachments)->toHaveCount(1);
 
-    Storage::disk('public')->assertExists($lesson->content_path);
+    $attachment = $lesson->attachments->first();
+
+    expect($attachment->path)->not->toBeNull()
+        ->and($attachment->original_name)->toBe('lesson.mp4')
+        ->and($attachment->mime_type)->toBe('video/mp4');
+
+    Storage::disk('public')->assertExists($attachment->path);
+});
+
+it('複数の教材ファイルを一度に添付できる', function () {
+    Storage::fake('public');
+
+    $training = Training::factory()->create();
+    $video = UploadedFile::fake()->create('lesson.mp4', 2048, 'video/mp4');
+    $pdf = UploadedFile::fake()->create('slide.pdf', 512, 'application/pdf');
+
+    $lesson = (new StoreTrainingLessonAction)->execute(
+        training: $training,
+        title: '第1章',
+        position: null,
+        contents: [$video, $pdf],
+    );
+
+    expect($lesson->attachments)->toHaveCount(2);
+
+    $names = $lesson->attachments->pluck('original_name')->all();
+    expect($names)->toBe(['lesson.mp4', 'slide.pdf']);
+
+    foreach ($lesson->attachments as $attachment) {
+        Storage::disk('public')->assertExists($attachment->path);
+    }
 });

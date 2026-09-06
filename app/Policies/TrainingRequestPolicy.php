@@ -100,6 +100,11 @@ final class TrainingRequestPolicy
         return $actor->is($trainingRequest->employee) || $actor->is($trainingRequest->requestedBy);
     }
 
+    /**
+     * 多段階承認の場合、1段階目は申請対象本人の上司、2段階目以降は
+     * 直前の段階を決裁した人の上司でなければならない（{@see TrainingRequest::currentStageApprovalTarget()}）。
+     * 単層承認（required_approval_stages=1）では、従来通り申請対象本人の上司であればよい。
+     */
     private function isDecidableBy(User $user, TrainingRequest $trainingRequest): bool
     {
         $actor = $user->employee;
@@ -108,6 +113,6 @@ final class TrainingRequestPolicy
             return false;
         }
 
-        return $actor->isManagerOf($trainingRequest->employee);
+        return $actor->isManagerOf($trainingRequest->currentStageApprovalTarget());
     }
 }

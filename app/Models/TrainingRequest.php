@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * 従業員による研修受講申請のモデルクラス。
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'status',
     'reason',
     'due_at',
+    'required_approval_stages',
+    'current_approval_stage',
     'decided_by_employee_id',
     'decided_at',
     'decision_comment',
@@ -41,6 +44,8 @@ class TrainingRequest extends Model
         return [
             'status' => TrainingRequestStatus::class,
             'due_at' => 'date',
+            'required_approval_stages' => 'integer',
+            'current_approval_stage' => 'integer',
             'decided_at' => 'datetime',
         ];
     }
@@ -77,6 +82,29 @@ class TrainingRequest extends Model
     public function isSelfRequested(): bool
     {
         return $this->requested_by_employee_id === $this->employee_id;
+    }
+
+    /** 各段階の決裁記録（段階番号順）。多段階承認でない申請（required_approval_stages=1）でも、承認済みなら1件だけ持つ。 */
+    public function approvalHistory(): HasMany
+    {
+        return $this->hasMany(TrainingRequestApprovalStage::class)->orderBy('stage_number');
+    }
+
+    /**
+     * 現在保留中の段階を承認・却下できる資格があるのは「誰の上司か」を判定するための対象従業員。
+     * 1段階目は申請対象の本人。2段階目以降は、直前の段階を決裁した人（その人の上司が次の決裁者になる）。
+     */
+    public function currentStageApprovalTarget(): Employee
+    {
+        if ($this->current_approval_stage <= 1) {
+            return $this->employee;
+        }
+
+        $previousStage = $this->approvalHistory()
+            ->where('stage_number', $this->current_approval_stage - 1)
+            ->first();
+
+        return $previousStage?->decidedBy ?? $this->employee;
     }
 
     /**

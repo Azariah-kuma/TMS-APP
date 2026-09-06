@@ -10,6 +10,7 @@ use App\Http\Requests\Trainings\UpdateTrainingRequest;
 use App\Http\Resources\TrainingResource;
 use App\Models\Training;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,11 +19,15 @@ use Illuminate\Support\Facades\Gate;
  */
 final class TrainingController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         Gate::authorize('viewAny', Training::class);
 
-        $trainings = Training::query()->with('lessons')->orderBy('title')->get();
+        $trainings = Training::query()
+            ->with(['lessons.attachments', 'audienceDepartment'])
+            ->visibleTo($request->user()->employee)
+            ->orderBy('title')
+            ->get();
 
         return response()->json(TrainingResource::collection($trainings));
     }
@@ -31,7 +36,9 @@ final class TrainingController extends Controller
     {
         Gate::authorize('view', $training);
 
-        return response()->json(new TrainingResource($training->load('lessons')));
+        return response()->json(
+            new TrainingResource($training->load(['lessons.attachments', 'audienceDepartment'])),
+        );
     }
 
     public function store(StoreTrainingRequest $request): JsonResponse

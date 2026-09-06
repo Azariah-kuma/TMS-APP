@@ -28,7 +28,7 @@
         <tbody>
           @for (lesson of e.training?.lessons; track lesson.id) {
             <tr>
-              @if (lesson.content_mime_type?.startsWith('video/')) {
+              @if (hasVideoAttachment(lesson)) {
                 <td style="width: 32px">
                   @if (isLessonCompleted(lesson.id)) {
                     <span class="badge badge-success" title="視聴済み">✓</span>
@@ -38,12 +38,20 @@
                 </td>
                 <td>
                   {{ lesson.title }}
-                  <video
-                    [src]="lesson.content_url"
-                    controls
-                    style="max-width: 320px; display: block; margin-top: 4px"
-                    (ended)="onVideoEnded(lesson.id)"
-                  ></video>
+                  @for (attachment of lesson.attachments; track attachment.id) {
+                    @if (attachment.mime_type.startsWith('video/')) {
+                      <video
+                        [src]="attachment.url"
+                        controls
+                        style="max-width: 320px; display: block; margin-top: 4px"
+                        (ended)="onVideoEnded(lesson.id)"
+                      ></video>
+                    } @else {
+                      <a [href]="attachment.url" target="_blank" rel="noopener" style="margin-left: 8px">
+                        {{ attachment.original_name }}
+                      </a>
+                    }
+                  }
                   <p class="field-hint">動画を最後まで再生すると自動的に完了になります。</p>
                   @if (canEdit() && isLessonCompleted(lesson.id)) {
                     <button
@@ -67,9 +75,9 @@
                 </td>
                 <td>
                   {{ lesson.title }}
-                  @if (lesson.content_url) {
-                    <a [href]="lesson.content_url" target="_blank" rel="noopener" style="margin-left: 8px">
-                      {{ lesson.content_original_name ?? '教材を開く' }}
+                  @for (attachment of lesson.attachments; track attachment.id) {
+                    <a [href]="attachment.url" target="_blank" rel="noopener" style="margin-left: 8px">
+                      {{ attachment.original_name }}
                     </a>
                   }
                 </td>

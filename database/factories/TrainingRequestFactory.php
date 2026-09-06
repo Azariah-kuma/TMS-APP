@@ -31,6 +31,8 @@ class TrainingRequestFactory extends Factory
             'status' => TrainingRequestStatus::Pending,
             'reason' => fake()->sentence(),
             'due_at' => null,
+            'required_approval_stages' => 1,
+            'current_approval_stage' => 1,
             'decided_by_employee_id' => null,
             'decided_at' => null,
             'decision_comment' => null,
@@ -60,6 +62,15 @@ class TrainingRequestFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => TrainingRequestStatus::Cancelled,
+        ]);
+    }
+
+    /** 多段階承認が必要な研修への申請を表す（デフォルトでは1段階目が保留中）。 */
+    public function multistage(int $requiredStages = 2): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'required_approval_stages' => $requiredStages,
+            'current_approval_stage' => 1,
         ]);
     }
 }

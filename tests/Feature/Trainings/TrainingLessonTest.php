@@ -46,16 +46,36 @@ it('人事はLessonの教材として動画ファイルを添付できる', func
 
     $response = $this->post("/api/trainings/{$training->id}/lessons", [
         'title' => '第1章 講義動画',
-        'content' => $video,
+        'contents' => [$video],
     ])->assertCreated();
 
-    $response->assertJsonPath('content_original_name', 'lesson.mp4')
-        ->assertJsonPath('content_mime_type', 'video/mp4');
+    $response->assertJsonPath('attachments.0.original_name', 'lesson.mp4')
+        ->assertJsonPath('attachments.0.mime_type', 'video/mp4');
 
-    expect($response->json('content_url'))->not->toBeNull();
+    expect($response->json('attachments.0.url'))->not->toBeNull();
 
     $lesson = TrainingLesson::where('title', '第1章 講義動画')->firstOrFail();
-    Storage::disk('public')->assertExists($lesson->content_path);
+    Storage::disk('public')->assertExists($lesson->attachments->first()->path);
+});
+
+it('人事はLessonに複数の教材ファイルを一度に添付できる', function () {
+    Storage::fake('public');
+
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $training = Training::factory()->create();
+    $video = UploadedFile::fake()->create('lesson.mp4', 5120, 'video/mp4');
+    $pdf = UploadedFile::fake()->create('slide.pdf', 512, 'application/pdf');
+
+    Sanctum::actingAs($hr->user);
+
+    $response = $this->post("/api/trainings/{$training->id}/lessons", [
+        'title' => '第1章',
+        'contents' => [$video, $pdf],
+    ])->assertCreated();
+
+    $response->assertJsonCount(2, 'attachments');
+    expect(collect($response->json('attachments'))->pluck('original_name')->all())
+        ->toBe(['lesson.mp4', 'slide.pdf']);
 });
 
 it('対応していない形式の教材ファイルは拒否される', function () {
@@ -69,8 +89,8 @@ it('対応していない形式の教材ファイルは拒否される', functio
 
     $this->post("/api/trainings/{$training->id}/lessons", [
         'title' => '第1章',
-        'content' => $file,
-    ])->assertUnprocessable()->assertJsonValidationErrors('content');
+        'contents' => [$file],
+    ])->assertUnprocessable()->assertJsonValidationErrors('contents.0');
 });
 
 it('一般社員はLessonを追加できない', function () {

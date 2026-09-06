@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /*
@@ -159,5 +160,30 @@ class Employee extends Model
     public function isManagerOf(self $employee): bool
     {
         return $this->subordinateIds()->contains($employee->id);
+    }
+
+    /** 現在、直属の部下を1人でも持っているか（＝管理職として振る舞っているか）。 */
+    public function isManager(): bool
+    {
+        return $this->currentDirectReportAssignments()->exists();
+    }
+
+    /**
+     * 今年度（4/1〜翌3/31）に入社したかどうか。研修カタログの「新入社員」向け
+     * 閲覧制限で使用する。年度が変わると自動的にfalseへ切り替わる。
+     */
+    public function hiredInCurrentFiscalYear(): bool
+    {
+        if ($this->hired_at === null) {
+            return false;
+        }
+
+        $today = Carbon::today();
+        $fiscalYearStart = $today->month >= 4
+            ? Carbon::create($today->year, 4, 1)
+            : Carbon::create($today->year - 1, 4, 1);
+        $fiscalYearEnd = $fiscalYearStart->copy()->addYear()->subDay();
+
+        return $this->hired_at->between($fiscalYearStart, $fiscalYearEnd);
     }
 }

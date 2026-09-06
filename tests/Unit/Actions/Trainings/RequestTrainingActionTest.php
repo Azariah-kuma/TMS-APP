@@ -23,7 +23,22 @@ it('研修受講を承認待ちの申請として作成する', function () {
         ->and($request->requested_by_employee_id)->toBe($employee->id)
         ->and($request->training_id)->toBe($training->id)
         ->and($request->status)->toBe(TrainingRequestStatus::Pending)
-        ->and($request->reason)->toBe('業務に必要なため');
+        ->and($request->reason)->toBe('業務に必要なため')
+        ->and($request->required_approval_stages)->toBe(1)
+        ->and($request->current_approval_stage)->toBe(1);
+});
+
+it('多段階承認が必要な研修への申請は、研修設定の段階数をスナップショットする', function () {
+    $employee = Employee::factory()->create();
+    $training = Training::factory()->create([
+        'requires_multistage_approval' => true,
+        'approval_stage_count' => 3,
+    ]);
+
+    $request = (new RequestTrainingAction)->execute($employee, $employee, $training);
+
+    expect($request->required_approval_stages)->toBe(3)
+        ->and($request->current_approval_stage)->toBe(1);
 });
 
 it('上司は部下の分を代理申請でき、申請者として上司自身が記録される', function () {

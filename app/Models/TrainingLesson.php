@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /*
  * 研修のLessonのモデルクラス。
  */
-#[Fillable(['training_id', 'title', 'position', 'content_path', 'content_original_name', 'content_mime_type'])]
+#[Fillable(['training_id', 'title', 'position'])]
 class TrainingLesson extends Model
 {
     /** @use HasFactory<TrainingLessonFactory> */
@@ -35,5 +35,10 @@ class TrainingLesson extends Model
     public function completions(): HasMany
     {
         return $this->hasMany(TrainingLessonCompletion::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TrainingLessonAttachment::class);
     }
 }

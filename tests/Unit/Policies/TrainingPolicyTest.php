@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\EmployeeRole;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Training;
 use App\Models\User;
@@ -18,11 +20,27 @@ it('従業員レコードのないユーザーは研修カタログを閲覧で�
     expect($user->can('viewAny', Training::class))->toBeFalse();
 });
 
-it('従業員なら誰でも研修の詳細を閲覧できる', function () {
+it('従業員なら誰でも対象者の制限がない研修の詳細を閲覧できる', function () {
     $employee = Employee::factory()->create();
     $training = Training::factory()->create();
 
     expect($employee->user->can('view', $training))->toBeTrue();
+});
+
+it('対象者の制限に合致しない従業員は研修の詳細を閲覧できない', function () {
+    $department = Department::factory()->create();
+    $employee = createEmployeeWithAssignment();
+    $training = Training::factory()->create(['audience_department_id' => $department->id]);
+
+    expect($employee->user->can('view', $training))->toBeFalse();
+});
+
+it('人事は対象者の制限に関わらず研修の詳細を閲覧できる', function () {
+    $department = Department::factory()->create();
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $training = Training::factory()->create(['audience_department_id' => $department->id]);
+
+    expect($hr->user->can('view', $training))->toBeTrue();
 });
 
 it('従業員レコードのないユーザーは研修の詳細を閲覧できない', function () {

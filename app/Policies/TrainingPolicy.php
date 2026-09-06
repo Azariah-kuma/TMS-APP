@@ -18,9 +18,10 @@ final class TrainingPolicy
         return $user->employee !== null;
     }
 
+    /** 対象者の制限（部署・管理職・新入社員）に合致する従業員のみ閲覧できる。 */
     public function view(User $user, Training $training): bool
     {
-        return $user->employee !== null;
+        return $user->employee !== null && $training->isVisibleTo($user->employee);
     }
 
     /** 研修の新規作成は人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */

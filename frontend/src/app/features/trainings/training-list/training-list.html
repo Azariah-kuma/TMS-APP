@@ -21,6 +21,47 @@
       <label for="description">説明</label>
       <textarea id="description" class="input" formControlName="description" rows="3"></textarea>
     </div>
+    <div class="field">
+      <label for="audience_department_id">対象部署</label>
+      <select id="audience_department_id" class="input" formControlName="audience_department_id">
+        <option [value]="0">指定なし</option>
+        @for (department of departments(); track department.id) {
+          <option [value]="department.id">{{ department.name }}</option>
+        }
+      </select>
+      <p class="field-hint">
+        対象部署・管理職・新入社員のいずれも指定しなければ、全員が閲覧できる研修になります。複数指定した場合はいずれかに該当すれば閲覧できます。
+      </p>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" formControlName="audience_managers_only" /> 管理職のみ対象に含める</label>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" formControlName="audience_new_hires_only" /> 新入社員（今年度入社）のみ対象に含める</label>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" formControlName="requires_multistage_approval" /> 多段階承認が必要（部長→役員など、高額・重要な研修向け）</label>
+      <p class="field-hint">
+        チェックすると、承認者になり得る管理職には対象部署等の設定に関わらず常にこの研修が表示されます（人事も従来通り把握できます）。
+      </p>
+      @if (form.controls.requires_multistage_approval.value) {
+        <div style="margin-top: 8px">
+          <label for="approval_stage_count">必要な承認段階数</label>
+          <input
+            id="approval_stage_count"
+            class="input"
+            type="number"
+            min="2"
+            max="5"
+            style="max-width: 100px"
+            formControlName="approval_stage_count"
+          />
+          <p class="field-hint">
+            例: 2段階なら「直属の上司→その上司」の順に、両方が承認して初めて確定します。
+          </p>
+        </div>
+      }
+    </div>
     <button type="submit" class="btn btn-primary" [disabled]="form.invalid || submitting()">登録する</button>
   </form>
 }
@@ -36,6 +77,9 @@
         <th>タイトル</th>
         <th>カテゴリ</th>
         <th>Lesson数</th>
+        @if (isHr()) {
+          <th>対象者</th>
+        }
       </tr>
     </thead>
     <tbody>
@@ -44,6 +88,9 @@
           <td><a [routerLink]="['/trainings', training.id]">{{ training.title }}</a></td>
           <td>{{ training.category || '—' }}</td>
           <td>{{ training.lessons?.length ?? 0 }}</td>
+          @if (isHr()) {
+            <td>{{ audienceLabel(training) }}</td>
+          }
         </tr>
       }
     </tbody>

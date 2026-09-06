@@ -48,6 +48,12 @@ final class RequestTrainingAction
             throw new AlreadyRequestedException('この研修は既に申請済みで、承認待ちです。');
         }
 
+        // 必要な承認段階数は申請時点のTraining設定をスナップショットする
+        // （申請作成後にTraining側の設定が変わっても、進行中の申請には影響させないため）。
+        $requiredApprovalStages = $training->requires_multistage_approval
+            ? $training->approval_stage_count
+            : 1;
+
         // 最終的な一意性は training_requests テーブルの部分ユニークインデックスが保証する。
         // 制約に違反した場合はここで捕捉して同じドメイン例外に変換する。
         try {
@@ -57,6 +63,8 @@ final class RequestTrainingAction
                 'status' => TrainingRequestStatus::Pending,
                 'reason' => $reason,
                 'due_at' => $dueAt,
+                'required_approval_stages' => $requiredApprovalStages,
+                'current_approval_stage' => 1,
             ]);
         } catch (UniqueConstraintViolationException) {
             throw new AlreadyRequestedException('この研修は既に申請済みで、承認待ちです。');

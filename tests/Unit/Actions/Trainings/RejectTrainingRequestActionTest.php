@@ -34,3 +34,17 @@ it('承認待ちでない申請は却下できない', function () {
     expect(fn () => (new RejectTrainingRequestAction)->execute($request, Employee::factory()->create()))
         ->toThrow(TrainingRequestNotPendingException::class);
 });
+
+it('多段階承認の途中の段階で却下されると、残りの段階を待たずに申請全体が却下される', function () {
+    $request = TrainingRequest::factory()->multistage(2)->create(['current_approval_stage' => 1]);
+    $manager = Employee::factory()->create();
+
+    $rejected = (new RejectTrainingRequestAction)->execute($request, $manager, '対象外の研修のため');
+
+    expect($rejected->status)->toBe(TrainingRequestStatus::Rejected)
+        ->and($rejected->decided_by_employee_id)->toBe($manager->id);
+
+    $history = $rejected->approvalHistory()->where('stage_number', 1)->first();
+    expect($history->status->value)->toBe('rejected')
+        ->and($history->comment)->toBe('対象外の研修のため');
+});

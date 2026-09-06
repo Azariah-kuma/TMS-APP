@@ -26,6 +26,15 @@ final class TrainingResource extends JsonResource
             'description' => $this->description,
             'category' => $this->category,
             'is_active' => $this->is_active,
+            'audience_department_id' => $this->audience_department_id,
+            'audience_department_name' => $this->whenLoaded(
+                'audienceDepartment',
+                fn () => $this->audienceDepartment?->name,
+            ),
+            'audience_managers_only' => $this->audience_managers_only,
+            'audience_new_hires_only' => $this->audience_new_hires_only,
+            'requires_multistage_approval' => $this->requires_multistage_approval,
+            'approval_stage_count' => $this->approval_stage_count,
             'lessons' => TrainingLessonResource::collection($this->whenLoaded('lessons')),
         ];
     }

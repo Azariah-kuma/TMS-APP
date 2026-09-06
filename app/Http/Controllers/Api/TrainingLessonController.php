@@ -24,7 +24,9 @@ final class TrainingLessonController extends Controller
     {
         Gate::authorize('view', $training);
 
-        return response()->json(TrainingLessonResource::collection($training->lessons));
+        return response()->json(
+            TrainingLessonResource::collection($training->lessons()->with('attachments')->get()),
+        );
     }
 
     public function store(
@@ -38,7 +40,7 @@ final class TrainingLessonController extends Controller
             training: $training,
             title: $validated['title'],
             position: $validated['position'] ?? null,
-            content: $request->file('content'),
+            contents: $request->file('contents', []),
         );
 
         return response()->json(new TrainingLessonResource($lesson), Response::HTTP_CREATED);

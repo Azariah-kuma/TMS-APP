@@ -28,7 +28,7 @@ final class TrainingLessonCompletionController extends Controller
         $enrollment = $action->execute($trainingEnrollment, $trainingLesson, completed: true);
 
         return response()->json(
-            new TrainingEnrollmentResource($enrollment->load(['training.lessons', 'lessonCompletions'])),
+            new TrainingEnrollmentResource($enrollment->load(['training.lessons.attachments', 'lessonCompletions'])),
         );
     }
 
@@ -43,7 +43,7 @@ final class TrainingLessonCompletionController extends Controller
         $enrollment = $action->execute($trainingEnrollment, $trainingLesson, completed: false);
 
         return response()->json(
-            new TrainingEnrollmentResource($enrollment->load(['training.lessons', 'lessonCompletions'])),
+            new TrainingEnrollmentResource($enrollment->load(['training.lessons.attachments', 'lessonCompletions'])),
         );
     }
 }

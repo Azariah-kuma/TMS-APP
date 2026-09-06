@@ -1,6 +1,16 @@
 import { Training } from './training';
 
 export type TrainingRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type TrainingRequestApprovalStageStatus = 'approved' | 'rejected';
+
+/** 多段階承認における、1段階分の決裁記録。 */
+export interface TrainingRequestApprovalStage {
+  stage_number: number;
+  decided_by_name?: string;
+  status: TrainingRequestApprovalStageStatus;
+  decided_at: string;
+  comment: string | null;
+}
 
 export interface TrainingRequest {
   id: number;
@@ -14,6 +24,12 @@ export interface TrainingRequest {
   status: TrainingRequestStatus;
   reason: string | null;
   due_at: string | null;
+  /** 必要な承認段階数（研修が多段階承認不要なら1）。 */
+  required_approval_stages: number;
+  /** 現在承認待ちの段階（1始まり）。 */
+  current_approval_stage: number;
+  /** これまでに確定した各段階の決裁記録（段階番号順）。 */
+  approval_history: TrainingRequestApprovalStage[];
   decided_by_employee_id: number | null;
   decided_by_name?: string | null;
   decided_at: string | null;

@@ -52,7 +52,7 @@ export class TrainingDetail implements OnInit {
 
   readonly lessonSubmitting = signal(false);
   readonly lessonError = signal<string | null>(null);
-  readonly lessonContent = signal<File | null>(null);
+  readonly lessonContents = signal<File[]>([]);
   readonly lessonDeletingId = signal<number | null>(null);
   readonly lessonForm = this.fb.nonNullable.group({
     title: ['', Validators.required],
@@ -138,13 +138,13 @@ export class TrainingDetail implements OnInit {
 
   onLessonContentSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    this.lessonContent.set(file);
+    const files = Array.from(input.files ?? []);
+    this.lessonContents.set(files);
 
-    // Lesson名が未入力なら、ファイル名（拡張子を除く）を仮のLesson名として自動セットする。
+    // Lesson名が未入力なら、1つ目のファイル名（拡張子を除く）を仮のLesson名として自動セットする。
     const titleControl = this.lessonForm.controls.title;
-    if (file && !titleControl.value) {
-      titleControl.setValue(file.name.replace(/\.[^./]+$/, ''));
+    if (files[0] && !titleControl.value) {
+      titleControl.setValue(files[0].name.replace(/\.[^./]+$/, ''));
     }
   }
 
@@ -157,11 +157,11 @@ export class TrainingDetail implements OnInit {
     this.lessonError.set(null);
 
     this.trainingService
-      .addLesson(this.trainingId, { ...this.lessonForm.getRawValue(), content: this.lessonContent() })
+      .addLesson(this.trainingId, { ...this.lessonForm.getRawValue(), contents: this.lessonContents() })
       .subscribe({
         next: () => {
           this.lessonForm.reset({ title: '' });
-          this.lessonContent.set(null);
+          this.lessonContents.set([]);
           this.lessonSubmitting.set(false);
           this.trainingService.get(this.trainingId).subscribe((training) => this.training.set(training));
         },

@@ -6,6 +6,7 @@ use App\Actions\Trainings\DeleteTrainingLessonAction;
 use App\Exceptions\InvalidTrainingLessonException;
 use App\Models\Training;
 use App\Models\TrainingLesson;
+use App\Models\TrainingLessonAttachment;
 use App\Models\TrainingLessonCompletion;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -29,19 +30,30 @@ it('Lessonを削除すると、紐づく完了記録も連鎖して削除され�
     expect(TrainingLessonCompletion::find($completion->id))->toBeNull();
 });
 
-it('教材ファイルが添付されている場合、publicディスクからも削除する', function () {
+it('教材ファイルが添付されている場合、publicディスクからも全て削除する', function () {
     Storage::fake('public');
 
     $training = Training::factory()->create();
-    $file = UploadedFile::fake()->create('lesson.mp4', 1024, 'video/mp4');
-    $path = $file->store('training-lessons', 'public');
-    $lesson = TrainingLesson::factory()->for($training)->create(['content_path' => $path]);
+    $lesson = TrainingLesson::factory()->for($training)->create();
 
-    Storage::disk('public')->assertExists($path);
+    $paths = collect([
+        UploadedFile::fake()->create('lesson.mp4', 1024, 'video/mp4'),
+        UploadedFile::fake()->create('slide.pdf', 256, 'application/pdf'),
+    ])->map(function (UploadedFile $file) use ($lesson) {
+        $path = $file->store('training-lessons', 'public');
+        TrainingLessonAttachment::factory()->create([
+            'training_lesson_id' => $lesson->id,
+            'path' => $path,
+        ]);
+
+        return $path;
+    });
+
+    $paths->each(fn (string $path) => Storage::disk('public')->assertExists($path));
 
     (new DeleteTrainingLessonAction)->execute($training, $lesson);
 
-    Storage::disk('public')->assertMissing($path);
+    $paths->each(fn (string $path) => Storage::disk('public')->assertMissing($path));
 });
 
 it('別の研修に属するLessonの削除は拒否される', function () {

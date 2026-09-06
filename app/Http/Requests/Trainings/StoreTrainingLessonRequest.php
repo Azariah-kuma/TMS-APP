@@ -36,8 +36,8 @@ final class StoreTrainingLessonRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'position' => ['sometimes', 'nullable', 'integer', 'min:0'],
-            'content' => [
-                'nullable',
+            'contents' => ['sometimes', 'array'],
+            'contents.*' => [
                 'file',
                 'max:102400',
                 'mimes:mp4,mov,webm,m4v,pdf,ppt,pptx,doc,docx,png,jpg,jpeg',

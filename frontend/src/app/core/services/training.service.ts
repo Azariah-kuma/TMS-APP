@@ -9,12 +9,17 @@ export interface CreateTrainingPayload {
   title: string;
   description?: string;
   category?: string;
+  audience_department_id?: number | null;
+  audience_managers_only?: boolean;
+  audience_new_hires_only?: boolean;
+  requires_multistage_approval?: boolean;
+  approval_stage_count?: number | null;
 }
 
 export interface CreateTrainingLessonPayload {
   title: string;
   position?: number;
-  content?: File | null;
+  contents?: File[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -37,9 +42,9 @@ export class TrainingService {
 
   /** 人事のみ：研修にLesson（教材）を追加する。動画等のファイルを添付する場合はmultipart/form-dataで送る。 */
   addLesson(trainingId: number, payload: CreateTrainingLessonPayload): Observable<TrainingLesson> {
-    const { content, ...rest } = payload;
+    const { contents, ...rest } = payload;
 
-    if (!content) {
+    if (!contents || contents.length === 0) {
       return this.http.post<TrainingLesson>(`${this.apiUrl}/api/trainings/${trainingId}/lessons`, rest);
     }
 
@@ -48,7 +53,7 @@ export class TrainingService {
     if (rest.position !== undefined) {
       formData.append('position', String(rest.position));
     }
-    formData.append('content', content);
+    contents.forEach((file) => formData.append('contents[]', file));
 
     return this.http.post<TrainingLesson>(`${this.apiUrl}/api/trainings/${trainingId}/lessons`, formData);
   }

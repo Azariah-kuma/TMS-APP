@@ -21,8 +21,8 @@ final class DeleteTrainingLessonAction
             throw new InvalidTrainingLessonException('このLessonは、この研修に属していません。');
         }
 
-        if ($lesson->content_path !== null) {
-            Storage::disk('public')->delete($lesson->content_path);
+        foreach ($lesson->attachments as $attachment) {
+            Storage::disk('public')->delete($attachment->path);
         }
 
         $lesson->delete();

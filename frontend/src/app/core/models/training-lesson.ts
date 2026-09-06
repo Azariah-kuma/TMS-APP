@@ -1,9 +1,14 @@
+export interface TrainingLessonAttachment {
+  id: number;
+  url: string;
+  original_name: string;
+  mime_type: string;
+}
+
 export interface TrainingLesson {
   id: number;
   training_id: number;
   title: string;
   position: number;
-  content_url: string | null;
-  content_original_name: string | null;
-  content_mime_type: string | null;
+  attachments: TrainingLessonAttachment[];
 }
