@@ -229,6 +229,7 @@
 | title | string | ○ | |
 | description | string, nullable | - | |
 | category | string, nullable | - | |
+| unit_cost | decimal, nullable | - | 受講者1名あたりの費用。未設定は予算消費・ROI算出の対象外 |
 | is_active | boolean | - | 既定true |
 | audience_department_id | int, nullable | - | 対象部署 |
 | audience_managers_only | boolean | - | 既定false |
@@ -252,6 +253,7 @@
 | フィールド | 型 |
 |---|---|
 | id / title / description / category / is_active | |
+| unit_cost | decimal, nullable |
 | audience_department_id / audience_department_name | int, nullable / string, nullable |
 | audience_managers_only / audience_new_hires_only | boolean |
 | requires_multistage_approval / approval_stage_count | boolean / int, nullable |
@@ -334,6 +336,7 @@
 | progress | int(0-100) |
 | due_at / started_at / completed_at | string, nullable |
 | completed_lesson_ids | `int[]`（読み込み時のみ） |
+| training_feedback | `TrainingFeedbackResource \| null`（読み込み時のみ、15章参照） |
 
 ---
 
@@ -416,3 +419,99 @@ approveと同条件。リクエスト: `{comment: string, nullable}`（最大100
 
 ### GET /reports/training-enrollments.csv
 人事のみ。レスポンス 200: `text/csv; charset=UTF-8`（`Content-Disposition: attachment`）。列: 従業員コード/氏名/部署/役職/研修/ステータス/進捗/期限/完了日時。CSVインジェクション対策済み（3.11参照）。
+
+### GET /reports/budget-usage
+人事のみ。クエリ: `fiscal_year`（int, 省略時は当年度）。レスポンス 200: `BudgetUsageRow[]`（部署名順）
+```json
+[{
+  "department_id": 1, "department_name": "開発部", "fiscal_year": 2026,
+  "budget_id": 3, "budget_amount": 500000.0,
+  "consumed_amount": 320000.0, "remaining_amount": 180000.0, "is_over_budget": false
+}]
+```
+`budget_id`/`budget_amount`/`remaining_amount`は、その部署にその年度の予算が未登録ならnull。
+
+### GET /reports/training-roi
+人事のみ。フィードバックが1件以上ある研修のみ対象。レスポンス 200: `TrainingRoiRow[]`（title順）
+```json
+[{
+  "training_id": 1, "title": "研修A", "unit_cost": 20000.0,
+  "feedback_count": 3, "avg_satisfaction_score": 4.33, "avg_understanding_score": 4.0,
+  "avg_quiz_score": 85.0, "effectiveness_score": 88.33, "roi_index": 0.0044
+}]
+```
+`unit_cost`未設定の研修は`roi_index`がnull。`avg_quiz_score`は簡易テスト未提出の受講者しかいなければnull（その場合`effectiveness_score`はアンケート2項目のみの平均）。
+
+---
+
+## 14. 予算管理
+
+### GET /department-budgets
+人事のみ。レスポンス 200: `DepartmentBudgetResource[]`（年度降順）
+
+### POST /department-budgets
+人事のみ。
+| フィールド | 型 | 必須 | 備考 |
+|---|---|---|---|
+| department_id | int | ○ | |
+| fiscal_year | int(2000-2100) | ○ | 同一部署・同一年度の重複は422 |
+| budget_amount | decimal | ○ | 0以上 |
+
+レスポンス 201: `DepartmentBudgetResource`
+
+### PATCH /department-budgets/{departmentBudget}
+人事のみ。リクエスト: `{budget_amount: decimal}`（部署・年度は変更不可）
+レスポンス 200: `DepartmentBudgetResource`
+
+**DepartmentBudgetResource**
+| フィールド | 型 |
+|---|---|
+| id / department_id / fiscal_year | int |
+| department_name | string（読み込み時のみ） |
+| budget_amount | decimal |
+
+---
+
+## 15. 研修効果測定（ROI）
+
+### POST /training-enrollments/{trainingEnrollment}/feedback
+受講完了済みの本人のみ。
+| フィールド | 型 | 必須 | 備考 |
+|---|---|---|---|
+| satisfaction_score | int(1-5) | ○ | |
+| understanding_score | int(1-5) | ○ | |
+| quiz_score | int(0-100), nullable | - | |
+| comment | string, nullable | - | 2000文字まで |
+
+レスポンス 201: `TrainingFeedbackResource`
+エラー: `TrainingEnrollmentNotCompletedException`／`TrainingFeedbackAlreadySubmittedException`（いずれも422）
+
+**TrainingFeedbackResource**
+| フィールド | 型 |
+|---|---|
+| id / training_enrollment_id | int |
+| satisfaction_score / understanding_score | int |
+| quiz_score | int, nullable |
+| comment | string, nullable |
+| submitted_at | string(datetime) |
+
+`GET /training-enrollments/{trainingEnrollment}`のレスポンス（`TrainingEnrollmentResource`）に`training_feedback`（`TrainingFeedbackResource \| null`）が追加される。
+
+---
+
+## 16. 監査ログ
+
+### GET /audit-logs
+人事のみ。クエリ: `auditable_type`（例: `Training`、短縮クラス名）、`auditable_id`（int）。50件ずつページネーション。
+レスポンス 200:
+```json
+{
+  "data": [{
+    "id": 1, "auditable_type": "Training", "auditable_id": 5, "action": "updated",
+    "actor_employee_id": 3, "actor_name": "人事 太郎",
+    "changes": { "unit_cost": "20000.00" }, "created_at": "2026-09-06T12:00:00+09:00"
+  }],
+  "current_page": 1, "last_page": 3, "total": 120
+}
+```
+`action`は`"created"|"updated"|"deleted"`。`changes`はcreated時が全属性、updated時が変更のあった属性のみ、deleted時が削除時点の全属性（いずれも`created_at`/`updated_at`除く）。
