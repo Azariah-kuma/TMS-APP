@@ -68,7 +68,7 @@
 | employee_code | string |
 | name / name_kana / last_name / first_name / last_name_kana / first_name_kana | string |
 | email | string |
-| role | `"employee" \| "hr"` |
+| role | `"employee" \| "hr" \| "audit"` |
 | hired_at | string（date） |
 | retired_at | string（date）\| null |
 | is_manager | boolean（現在1人以上の直属部下を持つか） |
@@ -125,13 +125,14 @@
 ## 6. 従業員管理
 
 ### GET /employees
-人事のみ。レスポンス 200: `EmployeeResource[]`（`current_assignment`/`is_manager`含む）
+人事・監査。クエリ: `with_retired`（`1`指定時のみ退職済み従業員も含める。既定は除外）。
+レスポンス 200: `EmployeeResource[]`（`current_assignment`/`is_manager`含む）
 
 ### GET /employees/subordinates
 ログイン中の従業員の部下一覧（階層＋有効な委任、退職者除く）。レスポンス 200: `EmployeeResource[]`
 
 ### GET /employees/{employee}
-本人・上司（直接/間接/委任）・人事のみ。レスポンス 200: `EmployeeResource`
+本人・上司（直接/間接/委任）・人事・監査。レスポンス 200: `EmployeeResource`
 
 ### POST /employees
 人事のみ。リクエスト:
@@ -141,10 +142,10 @@
 | last_name_kana / first_name_kana | string | ○ | 全角カタカナのみ |
 | email | string | ○ | unique、招待メール送信先 |
 | employee_code | string | ○ | unique |
-| role | `"employee"\|"hr"` | ○ | |
+| role | `"employee"\|"hr"\|"audit"` | ○ | |
 | hired_at | string(date) | ○ | |
-| department_id | int | ○ | |
-| position_id | int | ○ | |
+| department_id | int, nullable | - | `position_id`とセットで両方null、または両方指定（`required_with`）。外部監査等、部署に属さない従業員を想定 |
+| position_id | int, nullable | - | 同上 |
 | manager_id | int, nullable | - | |
 
 レスポンス 201: `EmployeeResource`
@@ -152,6 +153,20 @@
 ### POST /employees/bulk-import
 人事のみ。`multipart/form-data`、フィールド`file`（CSV、最大2MB）。
 レスポンス 200: `{created: EmployeeResource[], errors: {row: int, message: string, data: object}[]}`（部分成功）
+
+### PATCH /employees/{employee}
+人事のみ。氏名等の訂正（婚姻等による姓の変更など）。リクエスト:
+| フィールド | 型 | 必須 |
+|---|---|---|
+| last_name / first_name | string | ○ |
+| last_name_kana / first_name_kana | string | ○（全角カタカナのみ） |
+
+レスポンス 200: `EmployeeResource`
+
+### POST /employees/{employee}/retire
+人事のみ。退職登録（退職日を記録し、現在の配属があれば同日付で終了させる）。リクエスト: `{retired_at: string(date)}`
+レスポンス 200: `EmployeeResource`
+エラー: `EmployeeRetiredException`（422、既に退職済み）
 
 ### POST /employees/{employee}/resend-invite
 人事のみ（throttle: 6回/分）。レスポンス 200: `{message: string}`
@@ -162,7 +177,7 @@
 ## 7. 異動管理
 
 ### GET /employees/{employee}/assignments
-本人・上司・人事のみ。レスポンス 200: `EmployeeAssignmentResource[]`（新しい順、全履歴）
+本人・上司・人事・監査。レスポンス 200: `EmployeeAssignmentResource[]`（新しい順、全履歴）
 
 ### POST /employees/{employee}/assignments
 人事のみ。リクエスト:
@@ -191,7 +206,7 @@
 ## 8. 委任管理
 
 ### GET /employees/{employee}/delegations
-本人・上司・人事のみ。レスポンス 200: `DelegationResource[]`（委任元＝employee）
+本人・上司・人事・監査。レスポンス 200: `DelegationResource[]`（委任元＝employee）
 
 ### POST /employees/{employee}/delegations
 人事のみ。リクエスト:
@@ -220,7 +235,7 @@
 ## 9. 研修管理
 
 ### GET /trainings
-`visibleTo`スコープで対象者に応じ絞込。レスポンス 200: `TrainingResource[]`（title順）
+`visibleTo`スコープで対象者に応じ絞込（人事・監査は全件）。レスポンス 200: `TrainingResource[]`（title順、`lessons_count`含む）
 
 ### POST /trainings
 人事のみ。リクエスト:
@@ -240,7 +255,8 @@
 レスポンス 201: `TrainingResource`
 
 ### GET /trainings/{training}
-対象者の条件に合致する従業員のみ（人事は無条件）。レスポンス 200: `TrainingResource`（`lessons`含む）
+対象者の条件に合致する従業員のみ（人事・監査は無条件）。レスポンス 200: `TrainingResource`
+教材コンテンツ（`lessons.attachments`）は、人事または実際に受講登録済みの本人にのみ含まれる（それ以外は`lessons`が空、`lessons_count`のみ実件数）。
 エラー: 403（対象外）
 
 ### PATCH /trainings/{training}
@@ -257,14 +273,16 @@
 | audience_department_id / audience_department_name | int, nullable / string, nullable |
 | audience_managers_only / audience_new_hires_only | boolean |
 | requires_multistage_approval / approval_stage_count | boolean / int, nullable |
-| lessons | `TrainingLessonResource[]`（読み込み時のみ） |
+| lessons_count | int（レッスン件数。教材コンテンツの有無に関わらず常に実件数） |
+| lessons | `TrainingLessonResource[]`（教材コンテンツへのアクセス権がある場合のみ、`show`で読み込み時） |
 
 ---
 
 ## 10. 研修レッスン管理
 
 ### GET /trainings/{training}/lessons
-全従業員可。レスポンス 200: `TrainingLessonResource[]`（position順）
+全従業員可（研修の`view`権限を持てば呼べる）。レスポンス 200: `TrainingLessonResource[]`（position順）
+教材コンテンツへのアクセス権（人事、または実際に受講登録済みの本人）が無い場合は空配列 `[]` を返す。
 
 ### POST /trainings/{training}/lessons
 人事のみ。教材ファイルが無ければ`application/json`、あれば`multipart/form-data`。
@@ -298,10 +316,10 @@
 ## 11. 受講登録・進捗
 
 ### GET /training-enrollments
-`visibleTo`スコープ（本人／部下／全件）。レスポンス 200: `TrainingEnrollmentResource[]`
+`visibleTo`スコープ（本人／部下／全件。人事・監査は全件）。レスポンス 200: `TrainingEnrollmentResource[]`
 
 ### GET /training-enrollments/{trainingEnrollment}
-本人・上司・人事のみ。レスポンス 200: `TrainingEnrollmentResource`
+本人・上司・人事・監査。レスポンス 200: `TrainingEnrollmentResource`
 
 ### POST /employees/{employee}/training-enrollments
 人事のみ。リクエスト: `{training_id: int, due_at: string(date), nullable}`
@@ -343,7 +361,7 @@
 ## 12. 研修申請・承認ワークフロー
 
 ### GET /training-requests
-`visibleTo`スコープ。レスポンス 200: `TrainingRequestResource[]`（新しい順）
+`visibleTo`スコープ（人事・監査は全件）。レスポンス 200: `TrainingRequestResource[]`（新しい順）
 
 ### POST /training-requests
 リクエスト:
@@ -358,7 +376,7 @@
 エラー: `AlreadyEnrolledException`／`AlreadyRequestedException`／`EmployeeRetiredException`（422）
 
 ### GET /training-requests/{trainingRequest}
-本人・上司・人事のみ。レスポンス 200: `TrainingRequestResource`
+本人・上司・人事・監査。レスポンス 200: `TrainingRequestResource`
 
 ### POST /trainings/{training}/bulk-request
 部下を持つ上司または人事。リクエスト: `{department_id: int}`
@@ -409,7 +427,7 @@ approveと同条件。リクエスト: `{comment: string, nullable}`（最大100
 ## 13. レポート
 
 ### GET /reports/training-summary
-人事のみ。レスポンス 200:
+人事・監査（`viewReports`）。レスポンス 200:
 ```json
 {
   "by_training": [{ "id": 1, "name": "研修A", "not_started": 3, "in_progress": 5, "completed": 10 }],
@@ -418,10 +436,10 @@ approveと同条件。リクエスト: `{comment: string, nullable}`（最大100
 ```
 
 ### GET /reports/training-enrollments.csv
-人事のみ。レスポンス 200: `text/csv; charset=UTF-8`（`Content-Disposition: attachment`）。列: 従業員コード/氏名/部署/役職/研修/ステータス/進捗/期限/完了日時。CSVインジェクション対策済み（3.11参照）。
+人事・監査（`viewReports`）。レスポンス 200: `text/csv; charset=UTF-8`（`Content-Disposition: attachment`）。列: 従業員コード/氏名/部署/役職/研修/ステータス/進捗/期限/完了日時。CSVインジェクション対策済み（3.11参照）。
 
 ### GET /reports/budget-usage
-人事のみ。クエリ: `fiscal_year`（int, 省略時は当年度）。レスポンス 200: `BudgetUsageRow[]`（部署名順）
+人事・監査（`viewReports`）。クエリ: `fiscal_year`（int, 省略時は当年度）。レスポンス 200: `BudgetUsageRow[]`（部署名順）
 ```json
 [{
   "department_id": 1, "department_name": "開発部", "fiscal_year": 2026,
@@ -432,7 +450,7 @@ approveと同条件。リクエスト: `{comment: string, nullable}`（最大100
 `budget_id`/`budget_amount`/`remaining_amount`は、その部署にその年度の予算が未登録ならnull。
 
 ### GET /reports/training-roi
-人事のみ。フィードバックが1件以上ある研修のみ対象。レスポンス 200: `TrainingRoiRow[]`（title順）
+人事・監査（`viewReports`）。フィードバックが1件以上ある研修のみ対象。レスポンス 200: `TrainingRoiRow[]`（title順）
 ```json
 [{
   "training_id": 1, "title": "研修A", "unit_cost": 20000.0,
@@ -447,7 +465,7 @@ approveと同条件。リクエスト: `{comment: string, nullable}`（最大100
 ## 14. 予算管理
 
 ### GET /department-budgets
-人事のみ。レスポンス 200: `DepartmentBudgetResource[]`（年度降順）
+人事・監査。レスポンス 200: `DepartmentBudgetResource[]`（年度降順）
 
 ### POST /department-budgets
 人事のみ。
@@ -502,7 +520,7 @@ approveと同条件。リクエスト: `{comment: string, nullable}`（最大100
 ## 16. 監査ログ
 
 ### GET /audit-logs
-人事のみ。クエリ: `auditable_type`（例: `Training`、短縮クラス名）、`auditable_id`（int）。50件ずつページネーション。
+人事・監査。クエリ: `auditable_type`（例: `Training`、短縮クラス名）、`auditable_id`（int）。50件ずつページネーション。
 レスポンス 200:
 ```json
 {
