@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../../core/services/auth.service';
 import { TrainingEnrollmentService } from '../../../core/services/training-enrollment.service';
+import { TrainingFeedbackService } from '../../../core/services/training-feedback.service';
 import { TrainingEnrollment } from '../../../core/models/training-enrollment';
 import { TrainingLesson } from '../../../core/models/training-lesson';
 import { EnrollmentDetail } from './enrollment-detail';
@@ -30,6 +31,7 @@ function makeLesson(overrides: Partial<TrainingLesson> = {}): TrainingLesson {
 describe('EnrollmentDetail', () => {
   function createComponent(options: {
     serviceMock?: Partial<TrainingEnrollmentService>;
+    feedbackServiceMock?: Partial<TrainingFeedbackService>;
     currentEmployeeId?: number;
     isHr?: boolean;
   }) {
@@ -39,6 +41,10 @@ describe('EnrollmentDetail', () => {
         {
           provide: TrainingEnrollmentService,
           useValue: { get: () => of(makeEnrollment()), ...options.serviceMock },
+        },
+        {
+          provide: TrainingFeedbackService,
+          useValue: { ...options.feedbackServiceMock },
         },
         {
           provide: AuthService,
@@ -234,6 +240,115 @@ describe('EnrollmentDetail', () => {
       fixture.componentInstance.submitManualProgress();
 
       expect(fixture.componentInstance.savingProgress()).toBe(false);
+    });
+  });
+
+  describe('canSubmitFeedback', () => {
+    it('受講完了済み・本人・未提出なら提出できる', () => {
+      const fixture = createComponent({
+        serviceMock: { get: () => of(makeEnrollment({ status: 'completed', employee_id: 10 })) },
+        currentEmployeeId: 10,
+      });
+
+      expect(fixture.componentInstance.canSubmitFeedback()).toBe(true);
+    });
+
+    it('受講完了していなければ提出できない', () => {
+      const fixture = createComponent({
+        serviceMock: { get: () => of(makeEnrollment({ status: 'in_progress', employee_id: 10 })) },
+        currentEmployeeId: 10,
+      });
+
+      expect(fixture.componentInstance.canSubmitFeedback()).toBe(false);
+    });
+
+    it('本人以外（上司の閲覧など）は提出できない', () => {
+      const fixture = createComponent({
+        serviceMock: { get: () => of(makeEnrollment({ status: 'completed', employee_id: 10 })) },
+        currentEmployeeId: 99,
+      });
+
+      expect(fixture.componentInstance.canSubmitFeedback()).toBe(false);
+    });
+
+    it('既に提出済みなら提出できない', () => {
+      const fixture = createComponent({
+        serviceMock: {
+          get: () =>
+            of(
+              makeEnrollment({
+                status: 'completed',
+                employee_id: 10,
+                training_feedback: {
+                  id: 1,
+                  training_enrollment_id: 1,
+                  satisfaction_score: 5,
+                  understanding_score: 5,
+                  quiz_score: null,
+                  comment: null,
+                  submitted_at: '2026-09-06T00:00:00Z',
+                },
+              }),
+            ),
+        },
+        currentEmployeeId: 10,
+      });
+
+      expect(fixture.componentInstance.canSubmitFeedback()).toBe(false);
+    });
+  });
+
+  describe('submitFeedback', () => {
+    it('無効なフォームでは何もしない', () => {
+      const submit = vi.fn();
+      const fixture = createComponent({
+        serviceMock: { get: () => of(makeEnrollment({ status: 'completed', employee_id: 10 })) },
+        feedbackServiceMock: { submit },
+        currentEmployeeId: 10,
+      });
+
+      fixture.componentInstance.feedbackForm.patchValue({ satisfaction_score: 6 });
+      fixture.componentInstance.submitFeedback();
+
+      expect(submit).not.toHaveBeenCalled();
+    });
+
+    it('成功すると受講記録にフィードバックを反映する', () => {
+      const feedback = {
+        id: 1,
+        training_enrollment_id: 1,
+        satisfaction_score: 5,
+        understanding_score: 4,
+        quiz_score: 80,
+        comment: '良かった',
+        submitted_at: '2026-09-06T00:00:00Z',
+      };
+      const submit = vi.fn().mockReturnValue(of(feedback));
+      const fixture = createComponent({
+        serviceMock: { get: () => of(makeEnrollment({ id: 5, status: 'completed', employee_id: 10 })) },
+        feedbackServiceMock: { submit },
+        currentEmployeeId: 10,
+      });
+
+      fixture.componentInstance.submitFeedback();
+
+      expect(submit).toHaveBeenCalledWith(5, fixture.componentInstance.feedbackForm.getRawValue());
+      expect(fixture.componentInstance.enrollment()?.training_feedback).toEqual(feedback);
+      expect(fixture.componentInstance.feedbackSubmitting()).toBe(false);
+    });
+
+    it('失敗するとエラーメッセージを表示する', () => {
+      const submit = vi.fn().mockReturnValue(throwError(() => ({ error: { message: '提出に失敗しました。' } })));
+      const fixture = createComponent({
+        serviceMock: { get: () => of(makeEnrollment({ status: 'completed', employee_id: 10 })) },
+        feedbackServiceMock: { submit },
+        currentEmployeeId: 10,
+      });
+
+      fixture.componentInstance.submitFeedback();
+
+      expect(fixture.componentInstance.feedbackError()).toBe('提出に失敗しました。');
+      expect(fixture.componentInstance.feedbackSubmitting()).toBe(false);
     });
   });
 });

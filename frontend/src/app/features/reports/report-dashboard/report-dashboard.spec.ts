@@ -4,13 +4,17 @@ import { ReportService } from '../../../core/services/report.service';
 import { ReportDashboard } from './report-dashboard';
 
 describe('ReportDashboard', () => {
-  function createComponent(report: unknown) {
+  function createComponent(report: unknown, roi: unknown[] = []) {
     TestBed.configureTestingModule({
       imports: [ReportDashboard],
       providers: [
         {
           provide: ReportService,
-          useValue: { summary: () => of(report), csvExportUrl: 'https://api.example.com/export.csv' },
+          useValue: {
+            summary: () => of(report),
+            roi: () => of(roi),
+            csvExportUrl: 'https://api.example.com/export.csv',
+          },
         },
       ],
     });
@@ -19,6 +23,26 @@ describe('ReportDashboard', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('初期化時にROIレポートを読み込む', () => {
+    const roi = [
+      {
+        training_id: 1,
+        title: '研修A',
+        unit_cost: 10000,
+        feedback_count: 2,
+        avg_satisfaction_score: 4,
+        avg_understanding_score: 4,
+        avg_quiz_score: 80,
+        effectiveness_score: 80,
+        roi_index: 0.008,
+      },
+    ];
+    const fixture = createComponent({ by_training: [], by_department: [] }, roi);
+
+    expect(fixture.componentInstance.roi()).toEqual(roi);
+    expect(fixture.componentInstance.roiLoading()).toBe(false);
+  });
 
   it('初期化時にサマリーを読み込む', () => {
     const report = { by_training: [], by_department: [] };

@@ -16,3 +16,41 @@
     <app-bar-chart [rows]="toRows(r.by_department)" />
   </div>
 }
+
+<div class="panel">
+  <h2>研修効果測定（ROI）</h2>
+  @if (roiLoading()) {
+    <p class="muted">読み込み中…</p>
+  } @else if (roi().length === 0) {
+    <p class="muted">研修効果測定（アンケート・テスト）がまだ提出されていません。</p>
+  } @else {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>研修</th>
+          <th>提出件数</th>
+          <th>満足度平均</th>
+          <th>理解度平均</th>
+          <th>テスト平均</th>
+          <th>効果スコア</th>
+          <th>単価</th>
+          <th>ROI指標</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of roi(); track row.training_id) {
+          <tr>
+            <td>{{ row.title }}</td>
+            <td>{{ row.feedback_count }}</td>
+            <td>{{ row.avg_satisfaction_score }}</td>
+            <td>{{ row.avg_understanding_score }}</td>
+            <td>{{ row.avg_quiz_score ?? '—' }}</td>
+            <td>{{ row.effectiveness_score }}</td>
+            <td>{{ row.unit_cost !== null ? (row.unit_cost + '円') : '未設定' }}</td>
+            <td>{{ row.roi_index ?? '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

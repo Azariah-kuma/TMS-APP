@@ -43,7 +43,9 @@ final class TrainingEnrollmentController extends Controller
     {
         Gate::authorize('view', $trainingEnrollment);
 
-        return response()->json(new TrainingEnrollmentResource($trainingEnrollment->load(['training.lessons.attachments', 'lessonCompletions'])));
+        return response()->json(new TrainingEnrollmentResource(
+            $trainingEnrollment->load(['training.lessons.attachments', 'lessonCompletions', 'trainingFeedback']),
+        ));
     }
 
     /** 研修の割り当て（受講登録）を行う。 */

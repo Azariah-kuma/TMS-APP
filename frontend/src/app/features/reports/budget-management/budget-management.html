@@ -1,0 +1,82 @@
+<div class="page-header">
+  <h1>部署別 研修予算</h1>
+</div>
+
+<div class="panel">
+  <div class="field" style="margin-bottom: 0">
+    <label for="fiscal_year">年度</label>
+    <input
+      id="fiscal_year"
+      class="input"
+      type="number"
+      style="max-width: 120px"
+      [value]="fiscalYear()"
+      (change)="changeFiscalYear($any($event.target).valueAsNumber)"
+    />
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="muted">読み込み中…</p>
+} @else if (rows().length === 0) {
+  <p class="muted">部署がまだ登録されていません。</p>
+} @else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>部署</th>
+        <th>予算</th>
+        <th>消費額</th>
+        <th>残額</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.department_id) {
+        <tr>
+          <td>{{ row.department_name }}</td>
+          @if (editingDepartmentId() === row.department_id) {
+            <td colspan="4">
+              <form
+                class="field"
+                style="display: flex; gap: 8px; align-items: flex-start"
+                [formGroup]="editForm"
+                (ngSubmit)="submitEdit(row)"
+              >
+                <div class="field" style="margin-bottom: 0">
+                  <label for="budget-amount-{{ row.department_id }}">予算額（円）</label>
+                  <input
+                    id="budget-amount-{{ row.department_id }}"
+                    class="input"
+                    type="number"
+                    min="0"
+                    formControlName="budget_amount"
+                  />
+                </div>
+                <button type="submit" class="btn btn-small btn-primary" [disabled]="editForm.invalid || editSubmitting()">
+                  保存
+                </button>
+                <button type="button" class="btn btn-small" (click)="cancelEdit()">キャンセル</button>
+              </form>
+              @if (editError()) {
+                <p class="field-error">{{ editError() }}</p>
+              }
+            </td>
+          } @else {
+            <td>{{ row.budget_amount !== null ? (row.budget_amount + '円') : '未設定' }}</td>
+            <td [class.field-error]="row.is_over_budget">{{ row.consumed_amount }}円</td>
+            <td>{{ row.remaining_amount !== null ? (row.remaining_amount + '円') : '—' }}</td>
+            <td>
+              @if (row.is_over_budget) {
+                <span class="badge badge-accent">予算超過</span>
+              }
+              <button type="button" class="btn btn-small" (click)="startEdit(row)">
+                {{ row.budget_id ? '編集' : '予算を設定' }}
+              </button>
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+}

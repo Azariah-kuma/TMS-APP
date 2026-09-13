@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DelegationController;
+use App\Http\Controllers\Api\DepartmentBudgetController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\EmployeeAssignmentController;
 use App\Http\Controllers\Api\EmployeeController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\Api\PositionController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\TrainingEnrollmentController;
+use App\Http\Controllers\Api\TrainingFeedbackController;
 use App\Http\Controllers\Api\TrainingLessonCompletionController;
 use App\Http\Controllers\Api\TrainingLessonController;
 use App\Http\Controllers\Api\TrainingRequestController;
@@ -101,7 +104,23 @@ Route::middleware('auth:sanctum')->group(function () {
         [TrainingLessonCompletionController::class, 'incomplete'],
     );
 
-    // 人事向けレポート（研修別・部署別の受講状況サマリー、CSVエクスポート）
+    // 研修効果測定（受講後アンケート・簡易テストの提出）
+    Route::post(
+        '/training-enrollments/{trainingEnrollment}/feedback',
+        [TrainingFeedbackController::class, 'store'],
+    );
+
+    // 部署の年度研修予算
+    Route::get('/department-budgets', [DepartmentBudgetController::class, 'index']);
+    Route::post('/department-budgets', [DepartmentBudgetController::class, 'store']);
+    Route::patch('/department-budgets/{departmentBudget}', [DepartmentBudgetController::class, 'update']);
+
+    // 監査ログ（人事・研修管理の主要モデルへの変更操作の閲覧）
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+    // 人事向けレポート（研修別・部署別の受講状況サマリー、CSVエクスポート、予算消費、ROI）
     Route::get('/reports/training-summary', [ReportController::class, 'summary']);
     Route::get('/reports/training-enrollments.csv', [ReportController::class, 'exportCsv']);
+    Route::get('/reports/budget-usage', [ReportController::class, 'budgetUsage']);
+    Route::get('/reports/training-roi', [ReportController::class, 'roi']);
 });

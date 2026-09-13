@@ -114,6 +114,74 @@
       }
     </div>
   }
+
+  @if (e.status === 'completed') {
+    <div class="panel">
+      <h2>研修効果測定</h2>
+      @if (e.training_feedback; as feedback) {
+        <p>
+          満足度: {{ feedback.satisfaction_score }}/5 ／ 理解度: {{ feedback.understanding_score }}/5
+          @if (feedback.quiz_score !== null) {
+            ／ テスト: {{ feedback.quiz_score }}点
+          }
+        </p>
+        @if (feedback.comment) {
+          <p class="muted">{{ feedback.comment }}</p>
+        }
+      } @else if (canSubmitFeedback()) {
+        <form [formGroup]="feedbackForm" (ngSubmit)="submitFeedback()">
+          <div class="field">
+            <label for="satisfaction_score">満足度（1〜5）</label>
+            <input
+              id="satisfaction_score"
+              class="input"
+              type="number"
+              min="1"
+              max="5"
+              style="max-width: 100px"
+              formControlName="satisfaction_score"
+            />
+          </div>
+          <div class="field">
+            <label for="understanding_score">理解度（1〜5）</label>
+            <input
+              id="understanding_score"
+              class="input"
+              type="number"
+              min="1"
+              max="5"
+              style="max-width: 100px"
+              formControlName="understanding_score"
+            />
+          </div>
+          <div class="field">
+            <label for="quiz_score">簡易テストの得点（0〜100、任意）</label>
+            <input
+              id="quiz_score"
+              class="input"
+              type="number"
+              min="0"
+              max="100"
+              style="max-width: 100px"
+              formControlName="quiz_score"
+            />
+          </div>
+          <div class="field">
+            <label for="feedback_comment">コメント（任意）</label>
+            <textarea id="feedback_comment" class="input" formControlName="comment" rows="3"></textarea>
+          </div>
+          @if (feedbackError()) {
+            <p class="alert">{{ feedbackError() }}</p>
+          }
+          <button type="submit" class="btn btn-primary" [disabled]="feedbackForm.invalid || feedbackSubmitting()">
+            提出する
+          </button>
+        </form>
+      } @else {
+        <p class="muted">研修効果測定はまだ提出されていません。</p>
+      }
+    </div>
+  }
 } @else {
   <p class="muted">受講記録が見つかりません。</p>
 }

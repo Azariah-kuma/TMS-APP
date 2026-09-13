@@ -32,6 +32,7 @@ export class TrainingList implements OnInit {
   readonly form = this.fb.nonNullable.group({
     title: ['', Validators.required],
     category: [''],
+    unit_cost: [null as number | null],
     description: [''],
     audience_department_id: [NO_DEPARTMENT_VALUE],
     audience_managers_only: [false],
@@ -96,6 +97,7 @@ export class TrainingList implements OnInit {
           this.form.reset({
             title: '',
             category: '',
+            unit_cost: null,
             description: '',
             audience_department_id: NO_DEPARTMENT_VALUE,
             audience_managers_only: false,

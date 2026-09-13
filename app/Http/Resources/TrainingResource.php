@@ -25,6 +25,7 @@ final class TrainingResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'category' => $this->category,
+            'unit_cost' => $this->unit_cost === null ? null : (float) $this->unit_cost,
             'is_active' => $this->is_active,
             'audience_department_id' => $this->audience_department_id,
             'audience_department_name' => $this->whenLoaded(

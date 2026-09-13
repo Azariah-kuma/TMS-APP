@@ -19,6 +19,7 @@ function makeTraining(overrides: Partial<Training> = {}): Training {
     title: '研修A',
     description: null,
     category: null,
+    unit_cost: null,
     is_active: true,
     audience_department_id: null,
     audience_managers_only: false,

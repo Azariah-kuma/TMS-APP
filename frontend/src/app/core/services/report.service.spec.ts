@@ -32,4 +32,25 @@ describe('ReportService', () => {
   it('csvExportUrlはCSVエクスポート用の絶対URLを返す', () => {
     expect(service.csvExportUrl).toBe(`${base}/api/reports/training-enrollments.csv`);
   });
+
+  it('budgetUsageは年度を指定せずGET /api/reports/budget-usageを呼ぶ', () => {
+    service.budgetUsage().subscribe();
+    const req = httpMock.expectOne(`${base}/api/reports/budget-usage`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('budgetUsageは年度を指定するとクエリパラメータで送る', () => {
+    service.budgetUsage(2026).subscribe();
+    const req = httpMock.expectOne(`${base}/api/reports/budget-usage?fiscal_year=2026`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('roiはGET /api/reports/training-roiを呼ぶ', () => {
+    service.roi().subscribe();
+    const req = httpMock.expectOne(`${base}/api/reports/training-roi`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
 });

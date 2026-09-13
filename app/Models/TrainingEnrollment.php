@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * 従業員1名・研修1件に対する受講記録のモデルクラス。
@@ -53,6 +54,12 @@ class TrainingEnrollment extends Model
     public function lessonCompletions(): HasMany
     {
         return $this->hasMany(TrainingLessonCompletion::class);
+    }
+
+    /** 研修効果測定（アンケート・テスト）の提出記録（未提出ならnull）。 */
+    public function trainingFeedback(): HasOne
+    {
+        return $this->hasOne(TrainingFeedback::class);
     }
 
     /**

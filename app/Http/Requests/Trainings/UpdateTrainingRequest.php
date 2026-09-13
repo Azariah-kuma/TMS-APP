@@ -37,6 +37,7 @@ final class UpdateTrainingRequest extends FormRequest
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:255'],
+            'unit_cost' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999.99'],
             'is_active' => ['sometimes', 'boolean'],
             'audience_department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'audience_managers_only' => ['sometimes', 'boolean'],

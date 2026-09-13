@@ -34,6 +34,10 @@ final class TrainingEnrollmentResource extends JsonResource
                 'lessonCompletions',
                 fn () => $this->lessonCompletions->pluck('training_lesson_id')->values(),
             ),
+            'training_feedback' => $this->whenLoaded(
+                'trainingFeedback',
+                fn () => $this->trainingFeedback ? new TrainingFeedbackResource($this->trainingFeedback) : null,
+            ),
         ];
     }
 }

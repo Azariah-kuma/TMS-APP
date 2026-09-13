@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'title',
     'description',
     'category',
+    'unit_cost',
     'is_active',
     'audience_department_id',
     'audience_managers_only',
@@ -39,6 +40,7 @@ class Training extends Model
     {
         return [
             'is_active' => 'boolean',
+            'unit_cost' => 'decimal:2',
             'audience_managers_only' => 'boolean',
             'audience_new_hires_only' => 'boolean',
             'requires_multistage_approval' => 'boolean',

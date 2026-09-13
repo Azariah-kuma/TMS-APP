@@ -9,6 +9,7 @@ export interface CreateTrainingPayload {
   title: string;
   description?: string;
   category?: string;
+  unit_cost?: number | null;
   audience_department_id?: number | null;
   audience_managers_only?: boolean;
   audience_new_hires_only?: boolean;

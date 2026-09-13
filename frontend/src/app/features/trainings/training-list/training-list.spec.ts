@@ -14,6 +14,7 @@ function makeTraining(overrides: Partial<Training> = {}): Training {
     title: '情報セキュリティ研修',
     description: null,
     category: null,
+    unit_cost: null,
     is_active: true,
     audience_department_id: null,
     audience_managers_only: false,
@@ -133,6 +134,16 @@ describe('TrainingList', () => {
       expect(create).toHaveBeenCalledWith(
         expect.objectContaining({ title: '研修A', audience_department_id: null }),
       );
+    });
+
+    it('研修単価を指定した場合、そのまま送る', () => {
+      const create = vi.fn().mockReturnValue(of(makeTraining()));
+      const fixture = createComponent({ list: () => of([]), create });
+
+      fixture.componentInstance.form.patchValue({ title: '研修A', unit_cost: 30000 });
+      fixture.componentInstance.submit();
+
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ unit_cost: 30000 }));
     });
 
     it('対象部署を指定した場合、そのIDを送る', () => {

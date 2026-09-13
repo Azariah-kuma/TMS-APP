@@ -58,6 +58,18 @@ export const routes: Routes = [
           import('./features/reports/report-dashboard/report-dashboard').then((m) => m.ReportDashboard),
       },
       {
+        path: 'budgets',
+        canActivate: [hrGuard],
+        loadComponent: () =>
+          import('./features/reports/budget-management/budget-management').then((m) => m.BudgetManagement),
+      },
+      {
+        path: 'audit-logs',
+        canActivate: [hrGuard],
+        loadComponent: () =>
+          import('./features/reports/audit-log-list/audit-log-list').then((m) => m.AuditLogList),
+      },
+      {
         path: 'departments',
         canActivate: [hrGuard],
         loadComponent: () =>

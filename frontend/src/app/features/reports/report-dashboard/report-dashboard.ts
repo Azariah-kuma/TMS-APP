@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ReportService } from '../../../core/services/report.service';
 import { TrainingSummaryReport } from '../../../core/models/report';
+import { TrainingRoiRow } from '../../../core/models/training-roi';
 import { BarChart, BarChartRow } from '../../../shared/bar-chart/bar-chart';
 
 @Component({
@@ -15,10 +16,18 @@ export class ReportDashboard implements OnInit {
   readonly report = signal<TrainingSummaryReport | null>(null);
   readonly csvExportUrl = this.service.csvExportUrl;
 
+  readonly roiLoading = signal(true);
+  readonly roi = signal<TrainingRoiRow[]>([]);
+
   ngOnInit(): void {
     this.service.summary().subscribe((report) => {
       this.report.set(report);
       this.loading.set(false);
+    });
+
+    this.service.roi().subscribe((roi) => {
+      this.roi.set(roi);
+      this.roiLoading.set(false);
     });
   }
 

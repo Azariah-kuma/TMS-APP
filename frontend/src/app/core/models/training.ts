@@ -5,6 +5,8 @@ export interface Training {
   title: string;
   description: string | null;
   category: string | null;
+  /** 受講者1名あたりの研修費用（円）。未設定はコスト管理・ROI算出の対象外を意味する。 */
+  unit_cost: number | null;
   is_active: boolean;
   audience_department_id: number | null;
   audience_department_name?: string | null;
