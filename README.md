@@ -55,11 +55,13 @@ make frontend-install
 ### 開発用起動
 ```bash
 make up
-make frontend-dev
 ```
+`make up`はSail（Docker）に加え、フロントエンドの開発サーバー（`ng serve`）もバックグラウンドで自動起動する（ログは`frontend/dev-server.log`、PIDは`frontend/.dev-server.pid`）。`make down`で両方まとめて停止する。既に起動済みの場合は二重起動しない。
 
 - API: `http://localhost:8000`
 - Frontend: `http://localhost:4200`
+
+フロントエンドのログをターミナルに直接出したい場合や、`make up`とは別に単独で再起動したい場合は代わりに`make frontend-dev`（フォアグラウンド実行）を使う。
 
 ## 業務フロー
 
