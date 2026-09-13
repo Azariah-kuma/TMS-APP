@@ -83,6 +83,14 @@ it('新入社員向けの研修は前年度以前入社の従業員は閲覧で�
     expect($training->isVisibleTo($employee))->toBeFalse();
 });
 
+it('新入社員向けの研修は、部下への代理申請ができるよう管理職なら閲覧できる', function () {
+    $training = Training::factory()->create(['audience_new_hires_only' => true]);
+    $manager = createEmployeeWithAssignment(['hired_at' => now()->subYears(5)]);
+    $subordinate = createEmployeeWithAssignment([], ['manager_id' => $manager->id]);
+
+    expect($training->isVisibleTo($manager->fresh()))->toBeTrue();
+});
+
 it('多段階承認が必要な研修は、対象部署でなくても管理職なら閲覧できる', function () {
     $training = Training::factory()->create(['requires_multistage_approval' => true, 'approval_stage_count' => 2]);
     $manager = createEmployeeWithAssignment();

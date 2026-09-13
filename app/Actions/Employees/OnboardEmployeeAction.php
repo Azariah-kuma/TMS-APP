@@ -24,6 +24,10 @@ final class OnboardEmployeeAction
      *
      * パスワードはHRには入力させず、誰にも推測できないランダム値で初期化した上で、
      * 本人がパスワードを設定できる招待メール（Laravel標準のパスワードリセット機構を流用）を送る。
+     *
+     * $departmentId/$positionId は外部監査等、社内の部署に属さない従業員を想定してnullable
+     * （両方null、または両方指定のいずれか。FormRequest側で組み合わせを保証する）。
+     * nullの場合は配属（EmployeeAssignment）自体を作成しない。
      */
     public function execute(
         string $lastName,
@@ -34,8 +38,8 @@ final class OnboardEmployeeAction
         string $employeeCode,
         EmployeeRole $role,
         Carbon $hiredAt,
-        int $departmentId,
-        int $positionId,
+        ?int $departmentId,
+        ?int $positionId,
         ?int $managerId,
     ): Employee {
         $employee = DB::transaction(function () use (
@@ -67,7 +71,9 @@ final class OnboardEmployeeAction
                 'hired_at' => $hiredAt,
             ]);
 
-            $this->transferEmployeeAction->execute($employee, $departmentId, $positionId, $managerId, $hiredAt);
+            if ($departmentId !== null && $positionId !== null) {
+                $this->transferEmployeeAction->execute($employee, $departmentId, $positionId, $managerId, $hiredAt);
+            }
 
             // is_manager はここでは付与しない
             return $employee->fresh(['user', 'currentAssignment.department', 'currentAssignment.position']);

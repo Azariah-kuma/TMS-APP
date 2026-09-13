@@ -70,9 +70,11 @@
               @if (row.is_over_budget) {
                 <span class="badge badge-accent">予算超過</span>
               }
-              <button type="button" class="btn btn-small" (click)="startEdit(row)">
-                {{ row.budget_id ? '編集' : '予算を設定' }}
-              </button>
+              @if (isHr()) {
+                <button type="button" class="btn btn-small" (click)="startEdit(row)">
+                  {{ row.budget_id ? '編集' : '予算を設定' }}
+                </button>
+              }
             </td>
           }
         </tr>

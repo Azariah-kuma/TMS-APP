@@ -21,6 +21,7 @@ function makeTraining(overrides: Partial<Training> = {}): Training {
     audience_new_hires_only: false,
     requires_multistage_approval: false,
     approval_stage_count: null,
+    lessons_count: 0,
     ...overrides,
   };
 }

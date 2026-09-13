@@ -1,6 +1,6 @@
 import { EmployeeAssignment } from './employee-assignment';
 
-export type EmployeeRole = 'employee' | 'hr';
+export type EmployeeRole = 'employee' | 'hr' | 'audit';
 
 export interface Employee {
   id: number;

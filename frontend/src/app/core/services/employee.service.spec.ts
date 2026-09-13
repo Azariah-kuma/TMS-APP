@@ -22,9 +22,16 @@ describe('EmployeeService', () => {
     httpMock.verify();
   });
 
-  it('listはGET /api/employeesを呼ぶ', () => {
+  it('listはGET /api/employeesを呼ぶ（既定では退職済みを含めない）', () => {
     service.list().subscribe();
     const req = httpMock.expectOne(`${base}/api/employees`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('list(true)はwith_retired=1を付けて呼ぶ', () => {
+    service.list(true).subscribe();
+    const req = httpMock.expectOne(`${base}/api/employees?with_retired=1`);
     expect(req.request.method).toBe('GET');
     req.flush([]);
   });
@@ -122,5 +129,29 @@ describe('EmployeeService', () => {
     const req = httpMock.expectOne(`${base}/api/employees/6/resend-invite`);
     expect(req.request.method).toBe('POST');
     req.flush({ message: 'ok' });
+  });
+
+  it('updateNameはPATCH /api/employees/:idに氏名・フリガナを送る', () => {
+    const payload = {
+      last_name: '鈴木',
+      first_name: '太郎',
+      last_name_kana: 'スズキ',
+      first_name_kana: 'タロウ',
+    };
+    service.updateName(6, payload).subscribe();
+
+    const req = httpMock.expectOne(`${base}/api/employees/6`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual(payload);
+    req.flush({ id: 6 });
+  });
+
+  it('retireはPOST /api/employees/:id/retireに退職日を送る', () => {
+    service.retire(6, '2026-12-31').subscribe();
+
+    const req = httpMock.expectOne(`${base}/api/employees/6/retire`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ retired_at: '2026-12-31' });
+    req.flush({ id: 6 });
   });
 });

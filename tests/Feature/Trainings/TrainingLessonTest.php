@@ -102,12 +102,33 @@ it('一般社員はLessonを追加できない', function () {
     $this->postJson("/api/trainings/{$training->id}/lessons", ['title' => '第1章'])->assertForbidden();
 });
 
-it('ログイン済みの従業員なら誰でも研修のLesson一覧を取得できる', function () {
+it('受講登録済みの従業員は研修のLesson一覧（教材の中身）を取得できる', function () {
+    $employee = createEmployeeWithAssignment();
+    $training = Training::factory()->create();
+    TrainingLesson::factory()->for($training)->count(2)->create();
+    TrainingEnrollment::factory()->create(['employee_id' => $employee->id, 'training_id' => $training->id]);
+
+    Sanctum::actingAs($employee->user);
+
+    $this->getJson("/api/trainings/{$training->id}/lessons")->assertOk()->assertJsonCount(2);
+});
+
+it('受講登録していない従業員は、研修が見えてもLesson教材の中身までは取得できない', function () {
     $employee = createEmployeeWithAssignment();
     $training = Training::factory()->create();
     TrainingLesson::factory()->for($training)->count(2)->create();
 
     Sanctum::actingAs($employee->user);
+
+    $this->getJson("/api/trainings/{$training->id}/lessons")->assertOk()->assertJsonCount(0);
+});
+
+it('人事は受講登録していなくても研修のLesson一覧（教材の中身）を取得できる', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $training = Training::factory()->create();
+    TrainingLesson::factory()->for($training)->count(2)->create();
+
+    Sanctum::actingAs($hr->user);
 
     $this->getJson("/api/trainings/{$training->id}/lessons")->assertOk()->assertJsonCount(2);
 });

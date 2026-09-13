@@ -138,6 +138,50 @@ it('存在しない部署を指定した場合は登録を拒否する', functio
     ])->assertUnprocessable()->assertJsonValidationErrors('department_id');
 });
 
+it('外部監査等を想定し、部署・役職を指定せずに従業員を登録できる', function () {
+    Notification::fake();
+
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+
+    Sanctum::actingAs($hr->user);
+
+    $response = $this->postJson('/api/employees', [
+        'last_name' => '監査',
+        'first_name' => '太郎',
+        'last_name_kana' => 'カンサ',
+        'first_name_kana' => 'タロウ',
+        'email' => 'kansa@example.com',
+        'employee_code' => 'EMP-AUDIT',
+        'role' => EmployeeRole::Audit->value,
+        'hired_at' => '2026-04-01',
+    ])->assertCreated();
+
+    $employee = Employee::where('employee_code', 'EMP-AUDIT')->firstOrFail();
+
+    $response->assertJsonPath('id', $employee->id)
+        ->assertJsonPath('current_assignment', null);
+    expect($employee->currentAssignment)->toBeNull();
+});
+
+it('部署のみ・役職のみの指定は拒否する（両方指定するか、両方省略する）', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $department = Department::factory()->create();
+
+    Sanctum::actingAs($hr->user);
+
+    $this->postJson('/api/employees', [
+        'last_name' => '山田',
+        'first_name' => '太郎',
+        'last_name_kana' => 'ヤマダ',
+        'first_name_kana' => 'タロウ',
+        'email' => 'yamada@example.com',
+        'employee_code' => 'EMP-0002',
+        'role' => EmployeeRole::Employee->value,
+        'hired_at' => '2026-04-01',
+        'department_id' => $department->id,
+    ])->assertUnprocessable()->assertJsonValidationErrors('position_id');
+});
+
 it('人事は招待メールを再送信できる', function () {
     Notification::fake();
 

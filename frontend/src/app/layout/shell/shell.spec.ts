@@ -18,6 +18,7 @@ describe('Shell', () => {
             currentUser: signal({ id: 1, name: '山田太郎' }),
             currentEmployee: signal({ id: 1, role: 'hr' }),
             isHr: () => true,
+            canViewAll: () => true,
             logout,
           },
         },

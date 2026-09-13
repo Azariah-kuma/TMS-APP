@@ -45,6 +45,53 @@ export class EmployeeBulkImport {
     });
   }
 
+  /** 記入例入りのサンプルCSVをダウンロードする。部署コード・役職コードは実際の環境のものに置き換える必要がある。 */
+  downloadSample(): void {
+    const headers = [
+      '姓',
+      '名',
+      'セイ',
+      'メイ',
+      'メールアドレス',
+      '従業員コード',
+      'ロール',
+      '入社日',
+      '部署コード',
+      '役職コード',
+      '上司の従業員コード',
+    ];
+    const rows = [
+      {
+        姓: '山田',
+        名: '太郎',
+        セイ: 'ヤマダ',
+        メイ: 'タロウ',
+        メールアドレス: 'taro.yamada@example.com',
+        従業員コード: 'EMP-1001',
+        ロール: '一般社員',
+        入社日: '2026-04-01',
+        部署コード: 'DEPT-DEV',
+        役職コード: 'POS-STAFF',
+        上司の従業員コード: '',
+      },
+      {
+        姓: '鈴木',
+        名: '花子',
+        セイ: 'スズキ',
+        メイ: 'ハナコ',
+        メールアドレス: 'hanako.suzuki@example.com',
+        従業員コード: 'EMP-1002',
+        ロール: '人事',
+        入社日: '2026-04-01',
+        部署コード: 'DEPT-HR',
+        役職コード: 'POS-STAFF',
+        上司の従業員コード: '',
+      },
+    ];
+
+    downloadCsv('employees_import_sample.csv', rowsToCsv(headers, rows));
+  }
+
   /** 失敗した行だけを、元と同じ形式のCSVとしてダウンロードする。修正後にそのまま再アップロードできる。 */
   downloadFailedRows(): void {
     const errors = this.result()?.errors ?? [];

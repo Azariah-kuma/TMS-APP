@@ -12,6 +12,7 @@ use App\Http\Resources\TrainingLessonResource;
 use App\Models\Training;
 use App\Models\TrainingLesson;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
@@ -20,9 +21,14 @@ use Illuminate\Support\Facades\Gate;
  */
 final class TrainingLessonController extends Controller
 {
-    public function index(Training $training): JsonResponse
+    /** 教材の中身は、人事または実際に受講登録済みの本人にのみ返す。 */
+    public function index(Request $request, Training $training): JsonResponse
     {
         Gate::authorize('view', $training);
+
+        if (! $training->hasLessonContentAccessFor($request->user()->employee)) {
+            return response()->json([]);
+        }
 
         return response()->json(
             TrainingLessonResource::collection($training->lessons()->with('attachments')->get()),

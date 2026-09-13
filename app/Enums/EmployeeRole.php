@@ -12,4 +12,6 @@ enum EmployeeRole: string
 {
     case Employee = 'employee';
     case Hr = 'hr';
+    /** 全データの閲覧のみ許可される監査ロール（作成・更新・削除は不可）。 */
+    case Audit = 'audit';
 }

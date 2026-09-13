@@ -90,6 +90,12 @@ class Employee extends Model
         return $this->role === EmployeeRole::Hr;
     }
 
+    /** 監査ロール（全データの閲覧のみ許可、作成・更新・削除は不可）かどうか。 */
+    public function isAuditor(): bool
+    {
+        return $this->role === EmployeeRole::Audit;
+    }
+
     /**
      * 自分を頂点とする組織階層下にいる、全ての部下（間接的な部下も含む）のID一覧。
      *

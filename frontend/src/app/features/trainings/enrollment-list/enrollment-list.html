@@ -4,43 +4,12 @@
 
 @if (loading()) {
   <p class="muted">読み込み中…</p>
-} @else if (enrollments().length === 0) {
-  <p class="muted">受講記録はありません。</p>
+} @else if (showSplitView()) {
+  <h2>自身の受講状況</h2>
+  <app-enrollment-table [enrollments]="myEnrollments()" />
+
+  <h2 style="margin-top: 24px">部下の受講状況</h2>
+  <app-enrollment-table [enrollments]="subordinateEnrollments()" [showEmployeeColumn]="true" />
 } @else {
-  <table class="table">
-    <thead>
-      <tr>
-        @if (showEmployeeColumn()) {
-          <th>対象者</th>
-        }
-        <th>研修</th>
-        <th>ステータス</th>
-        <th style="width: 160px">進捗</th>
-        <th>期限</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (enrollment of enrollments(); track enrollment.id) {
-        <tr>
-          @if (showEmployeeColumn()) {
-            <td>{{ enrollment.employee_name }}</td>
-          }
-          <td><a [routerLink]="['/enrollments', enrollment.id]">{{ enrollment.training?.title }}</a></td>
-          <td>
-            <span
-              class="badge"
-              [class.badge-success]="enrollment.status === 'completed'"
-              [class.badge-accent]="enrollment.status === 'in_progress'"
-            >
-              {{ statusLabel(enrollment.status) }}
-            </span>
-          </td>
-          <td>
-            <app-progress-bar [value]="enrollment.progress" />
-          </td>
-          <td>{{ enrollment.due_at ?? '—' }}</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+  <app-enrollment-table [enrollments]="enrollments()" [showEmployeeColumn]="isHr()" />
 }

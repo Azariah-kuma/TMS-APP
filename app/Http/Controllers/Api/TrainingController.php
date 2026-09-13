@@ -19,12 +19,17 @@ use Illuminate\Support\Facades\Gate;
  */
 final class TrainingController extends Controller
 {
+    /**
+     * 一覧ではLesson教材の中身（添付ファイルURL等）までは返さず、件数のみ返す。
+     * 研修の閲覧対象外・未受講の従業員にまで教材ファイルのURLを渡さないため。
+     */
     public function index(Request $request): JsonResponse
     {
         Gate::authorize('viewAny', Training::class);
 
         $trainings = Training::query()
-            ->with(['lessons.attachments', 'audienceDepartment'])
+            ->with(['audienceDepartment'])
+            ->withCount('lessons')
             ->visibleTo($request->user()->employee)
             ->orderBy('title')
             ->get();
@@ -32,13 +37,21 @@ final class TrainingController extends Controller
         return response()->json(TrainingResource::collection($trainings));
     }
 
-    public function show(Training $training): JsonResponse
+    /**
+     * Lesson教材の中身（添付ファイル等）は、人事または実際に受講登録済みの本人にのみ返す
+     * （カタログで研修が見えることと、教材をダウンロードできることは別に扱う）。
+     */
+    public function show(Request $request, Training $training): JsonResponse
     {
         Gate::authorize('view', $training);
 
-        return response()->json(
-            new TrainingResource($training->load(['lessons.attachments', 'audienceDepartment'])),
-        );
+        $training->loadCount('lessons')->load('audienceDepartment');
+
+        if ($training->hasLessonContentAccessFor($request->user()->employee)) {
+            $training->load('lessons.attachments');
+        }
+
+        return response()->json(new TrainingResource($training));
     }
 
     public function store(StoreTrainingRequest $request): JsonResponse

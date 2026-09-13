@@ -14,7 +14,7 @@
     >
       <option value="">すべて</option>
       @for (type of auditableTypes; track type) {
-        <option [value]="type">{{ type }}</option>
+        <option [value]="type">{{ auditableTypeLabel(type) }}</option>
       }
     </select>
   </div>
@@ -40,7 +40,7 @@
         @for (log of p.data; track log.id) {
           <tr>
             <td>{{ log.created_at | date: 'yyyy/MM/dd HH:mm' }}</td>
-            <td>{{ log.auditable_type }}</td>
+            <td>{{ auditableTypeLabel(log.auditable_type) }}</td>
             <td>{{ log.auditable_id }}</td>
             <td>{{ actionLabel(log) }}</td>
             <td>{{ log.actor_name ?? '—' }}</td>

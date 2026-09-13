@@ -71,7 +71,7 @@ class TrainingEnrollment extends Model
     #[Scope]
     protected function visibleTo(Builder $query, Employee $actor): void
     {
-        if ($actor->isHr()) {
+        if ($actor->isHr() || $actor->isAuditor()) {
             return;
         }
 

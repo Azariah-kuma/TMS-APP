@@ -41,8 +41,9 @@ final class StoreEmployeeRequest extends FormRequest
             'employee_code' => ['required', 'string', 'max:50', 'unique:employees,employee_code'],
             'role' => ['required', new Enum(EmployeeRole::class)],
             'hired_at' => ['required', 'date'],
-            'department_id' => ['required', 'integer', 'exists:departments,id'],
-            'position_id' => ['required', 'integer', 'exists:positions,id'],
+            // 外部監査等、社内の部署に属さない従業員を想定してnullable（両方null、または両方指定）。
+            'department_id' => ['nullable', 'integer', 'exists:departments,id', 'required_with:position_id'],
+            'position_id' => ['nullable', 'integer', 'exists:positions,id', 'required_with:department_id'],
             'manager_id' => ['nullable', 'integer', 'exists:employees,id'],
         ];
     }

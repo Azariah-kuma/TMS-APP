@@ -10,6 +10,12 @@
       @if (e.role === 'hr') {
         <span class="badge badge-muted" style="margin-left: 4px">人事</span>
       }
+      @if (e.role === 'audit') {
+        <span class="badge badge-muted" style="margin-left: 4px">監査</span>
+      }
+      @if (e.retired_at) {
+        <span class="badge badge-muted" style="margin-left: 4px">退職済み（{{ e.retired_at }}）</span>
+      }
     </div>
   </div>
 
@@ -46,6 +52,10 @@
         <tr>
           <th>入社日</th>
           <td>{{ e.hired_at }}</td>
+        </tr>
+        <tr>
+          <th>退職日</th>
+          <td>{{ e.retired_at ?? '—' }}</td>
         </tr>
         <tr>
           <th>現在の部署</th>
@@ -229,6 +239,108 @@
             }
           </tbody>
         </table>
+      }
+    </div>
+  }
+
+  @if (isHr()) {
+    <div class="panel">
+      <button type="button" class="btn btn-small" (click)="showDangerZone.set(!showDangerZone())">
+        {{ showDangerZone() ? '操作を閉じる' : '氏名訂正・退職登録' }}
+      </button>
+
+      @if (showDangerZone()) {
+        <div style="margin-top: 12px">
+          @if (!editingName()) {
+            <button type="button" class="btn btn-small" (click)="startEditName()">氏名を訂正</button>
+          }
+          @if (!e.retired_at && !showRetireForm()) {
+            <button
+              type="button"
+              class="btn btn-small"
+              style="margin-left: 8px"
+              (click)="showRetireForm.set(true)"
+            >
+              退職済みにする
+            </button>
+          }
+
+          @if (editingName()) {
+            <form [formGroup]="nameForm" (ngSubmit)="submitEditName()" style="margin-top: 12px">
+              <p class="field-hint">婚姻等による姓の変更など、氏名・フリガナの訂正に使います。</p>
+              <div class="field">
+                <label for="edit-last-name">姓</label>
+                <input id="edit-last-name" class="input" type="text" formControlName="last_name" />
+              </div>
+              <div class="field">
+                <label for="edit-first-name">名</label>
+                <input id="edit-first-name" class="input" type="text" formControlName="first_name" />
+              </div>
+              <div class="field">
+                <label for="edit-last-name-kana">姓（フリガナ）</label>
+                <input
+                  id="edit-last-name-kana"
+                  class="input"
+                  type="text"
+                  formControlName="last_name_kana"
+                  autocomplete="off"
+                  (input)="convertToKatakana($event, 'last_name_kana')"
+                  (compositionend)="convertToKatakana($event, 'last_name_kana')"
+                />
+              </div>
+              <div class="field">
+                <label for="edit-first-name-kana">名（フリガナ）</label>
+                <input
+                  id="edit-first-name-kana"
+                  class="input"
+                  type="text"
+                  formControlName="first_name_kana"
+                  autocomplete="off"
+                  (input)="convertToKatakana($event, 'first_name_kana')"
+                  (compositionend)="convertToKatakana($event, 'first_name_kana')"
+                />
+              </div>
+              @if (nameEditError()) {
+                <p class="alert">{{ nameEditError() }}</p>
+              }
+              <button
+                type="submit"
+                class="btn btn-small btn-primary"
+                [disabled]="nameForm.invalid || nameEditSubmitting()"
+              >
+                保存
+              </button>
+              <button type="button" class="btn btn-small" (click)="cancelEditName()">キャンセル</button>
+            </form>
+          }
+
+          @if (showRetireForm()) {
+            <form [formGroup]="retireForm" (ngSubmit)="submitRetire()" style="margin-top: 12px">
+              <p class="field-hint">退職日を設定します。現在の配属（あれば）も同日付で終了します。</p>
+              <div class="field">
+                <label for="retired_at">退職日</label>
+                <input
+                  id="retired_at"
+                  class="input"
+                  type="date"
+                  formControlName="retired_at"
+                  style="max-width: 200px"
+                />
+              </div>
+              @if (retireError()) {
+                <p class="alert">{{ retireError() }}</p>
+              }
+              <button
+                type="submit"
+                class="btn btn-small btn-primary"
+                [disabled]="retireForm.invalid || retireSubmitting()"
+              >
+                退職登録する
+              </button>
+              <button type="button" class="btn btn-small" (click)="showRetireForm.set(false)">キャンセル</button>
+            </form>
+          }
+        </div>
       }
     </div>
   }

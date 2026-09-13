@@ -117,6 +117,16 @@ describe('EmployeeOnboard', () => {
       });
     });
 
+    it('部署・役職を指定なし（0）のままにすると、外部監査等を想定してnullで送る', () => {
+      const onboard = vi.fn().mockReturnValue(of({ id: 5 }));
+      const fixture = createComponent({ onboard });
+
+      fixture.componentInstance.form.setValue({ ...validRawValue, department_id: 0, position_id: 0 });
+      fixture.componentInstance.submit();
+
+      expect(onboard).toHaveBeenCalledWith(expect.objectContaining({ department_id: null, position_id: null }));
+    });
+
     it('manager_idが指定されていれば数値化して送る', () => {
       const onboard = vi.fn().mockReturnValue(of({ id: 5 }));
       const fixture = createComponent({ onboard });

@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
+import { AuthService } from '../../../core/services/auth.service';
 import { DepartmentBudgetService } from '../../../core/services/department-budget.service';
 import { ReportService } from '../../../core/services/report.service';
 import { BudgetUsageRow } from '../../../core/models/department-budget';
@@ -24,12 +25,14 @@ describe('BudgetManagement', () => {
   function createComponent(
     reportServiceMock: Partial<ReportService>,
     departmentBudgetsMock: Partial<DepartmentBudgetService> = {},
+    isHr = true,
   ) {
     TestBed.configureTestingModule({
       imports: [BudgetManagement],
       providers: [
         { provide: ReportService, useValue: reportServiceMock },
         { provide: DepartmentBudgetService, useValue: departmentBudgetsMock },
+        { provide: AuthService, useValue: { isHr: () => isHr } },
       ],
     });
 
@@ -37,6 +40,12 @@ describe('BudgetManagement', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('監査ロールなど人事以外はisHrがfalseになる', () => {
+    const fixture = createComponent({ budgetUsage: () => of([]) }, {}, false);
+
+    expect(fixture.componentInstance.isHr()).toBe(false);
+  });
 
   it('初期化時に今年度の予算消費状況を読み込む', () => {
     const rows = [makeRow()];

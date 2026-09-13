@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -15,9 +15,17 @@ export interface OnboardEmployeePayload {
   employee_code: string;
   role: EmployeeRole;
   hired_at: string;
-  department_id: number;
-  position_id: number;
+  /** 外部監査等、社内の部署に属さない従業員はnull（両方null、または両方指定）。 */
+  department_id: number | null;
+  position_id: number | null;
   manager_id: number | null;
+}
+
+export interface UpdateEmployeeNamePayload {
+  last_name: string;
+  first_name: string;
+  last_name_kana: string;
+  first_name_kana: string;
 }
 
 export interface TransferEmployeePayload {
@@ -50,9 +58,11 @@ export class EmployeeService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
 
-  /** 人事のみ利用可能：全従業員の一覧。 */
-  list(): Observable<Employee[]> {
-    return this.http.get<Employee[]>(`${this.apiUrl}/api/employees`);
+  /** 人事のみ利用可能：全従業員の一覧。withRetiredを指定しない限り退職済みの従業員は含まれない。 */
+  list(withRetired = false): Observable<Employee[]> {
+    const params = withRetired ? new HttpParams().set('with_retired', '1') : undefined;
+
+    return this.http.get<Employee[]>(`${this.apiUrl}/api/employees`, { params });
   }
 
   get(id: number): Observable<Employee> {
@@ -77,6 +87,11 @@ export class EmployeeService {
     return this.http.post<BulkImportResult>(`${this.apiUrl}/api/employees/bulk-import`, formData);
   }
 
+  /** 人事のみ：婚姻等による姓の変更など、氏名・フリガナを訂正する。 */
+  updateName(employeeId: number, payload: UpdateEmployeeNamePayload): Observable<Employee> {
+    return this.http.patch<Employee>(`${this.apiUrl}/api/employees/${employeeId}`, payload);
+  }
+
   assignments(employeeId: number): Observable<EmployeeAssignment[]> {
     return this.http.get<EmployeeAssignment[]>(`${this.apiUrl}/api/employees/${employeeId}/assignments`);
   }
@@ -87,6 +102,13 @@ export class EmployeeService {
       `${this.apiUrl}/api/employees/${employeeId}/assignments`,
       payload,
     );
+  }
+
+  /** 人事のみ：退職登録。退職日を記録し、現在の配属（あれば）を同日付で終了させる。 */
+  retire(employeeId: number, retiredAt: string): Observable<Employee> {
+    return this.http.post<Employee>(`${this.apiUrl}/api/employees/${employeeId}/retire`, {
+      retired_at: retiredAt,
+    });
   }
 
   delegationsGiven(employeeId: number): Observable<Delegation[]> {

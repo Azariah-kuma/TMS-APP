@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { hrGuard } from './core/guards/hr.guard';
+import { viewAllGuard } from './core/guards/view-all.guard';
 
 export const routes: Routes = [
   {
@@ -53,37 +54,37 @@ export const routes: Routes = [
       },
       {
         path: 'reports',
-        canActivate: [hrGuard],
+        canActivate: [viewAllGuard],
         loadComponent: () =>
           import('./features/reports/report-dashboard/report-dashboard').then((m) => m.ReportDashboard),
       },
       {
         path: 'budgets',
-        canActivate: [hrGuard],
+        canActivate: [viewAllGuard],
         loadComponent: () =>
           import('./features/reports/budget-management/budget-management').then((m) => m.BudgetManagement),
       },
       {
         path: 'audit-logs',
-        canActivate: [hrGuard],
+        canActivate: [viewAllGuard],
         loadComponent: () =>
           import('./features/reports/audit-log-list/audit-log-list').then((m) => m.AuditLogList),
       },
       {
         path: 'departments',
-        canActivate: [hrGuard],
+        canActivate: [viewAllGuard],
         loadComponent: () =>
           import('./features/master-data/department-list/department-list').then((m) => m.DepartmentList),
       },
       {
         path: 'positions',
-        canActivate: [hrGuard],
+        canActivate: [viewAllGuard],
         loadComponent: () =>
           import('./features/master-data/position-list/position-list').then((m) => m.PositionList),
       },
       {
         path: 'employees',
-        canActivate: [hrGuard],
+        canActivate: [viewAllGuard],
         loadComponent: () =>
           import('./features/employees/employee-list/employee-list').then((m) => m.EmployeeList),
       },

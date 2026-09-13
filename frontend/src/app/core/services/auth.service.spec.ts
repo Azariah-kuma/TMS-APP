@@ -41,6 +41,8 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
     expect(service.currentEmployee()).toBeNull();
     expect(service.isHr()).toBe(false);
+    expect(service.isAuditor()).toBe(false);
+    expect(service.canViewAll()).toBe(false);
   });
 
   it('loginはCSRF Cookie取得後にログインAPIを呼び、成功するとユーザー状態が更新される', () => {
@@ -57,6 +59,20 @@ describe('AuthService', () => {
 
     expect(service.isAuthenticated()).toBe(true);
     expect(service.isHr()).toBe(true);
+    expect(service.canViewAll()).toBe(true);
+  });
+
+  it('監査ロールはisAuditor/canViewAllがtrueになるが、isHrはfalseのまま', () => {
+    const user = makeUser({ employee: { role: 'audit' } as never });
+
+    service.login({ email: 'yamada@example.com', password: 'password' }).subscribe();
+
+    httpMock.expectOne(`${environment.apiUrl}/sanctum/csrf-cookie`).flush(null);
+    httpMock.expectOne(`${environment.apiUrl}/api/login`).flush(user);
+
+    expect(service.isHr()).toBe(false);
+    expect(service.isAuditor()).toBe(true);
+    expect(service.canViewAll()).toBe(true);
   });
 
   it('CSRF Cookie取得が失敗した場合、loginはエラーを伝播しユーザー状態は更新されない', () => {

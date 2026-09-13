@@ -16,5 +16,7 @@ export interface Training {
   requires_multistage_approval: boolean;
   /** 必要な承認段階数（requires_multistage_approvalがtrueの場合のみ意味を持つ）。 */
   approval_stage_count: number | null;
+  /** Lesson件数。一覧取得時は常に含まれる（教材の中身は一覧では返さないため）。 */
+  lessons_count: number;
   lessons?: TrainingLesson[];
 }

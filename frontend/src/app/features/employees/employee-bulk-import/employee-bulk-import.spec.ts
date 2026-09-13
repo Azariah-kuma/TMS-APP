@@ -78,6 +78,24 @@ describe('EmployeeBulkImport', () => {
     });
   });
 
+  describe('downloadSample', () => {
+    it('記入例入りのサンプルCSVをダウンロードする', () => {
+      const fixture = createComponent();
+      const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
+      const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+      const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+      fixture.componentInstance.downloadSample();
+
+      expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+
+      createObjectURLSpy.mockRestore();
+      revokeObjectURLSpy.mockRestore();
+      clickSpy.mockRestore();
+    });
+  });
+
   describe('downloadFailedRows', () => {
     it('エラーが無ければダウンロードしない', () => {
       const fixture = createComponent();

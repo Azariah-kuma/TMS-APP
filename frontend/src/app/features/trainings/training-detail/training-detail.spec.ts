@@ -6,11 +6,9 @@ import { AuthService } from '../../../core/services/auth.service';
 import { EmployeeService } from '../../../core/services/employee.service';
 import { MasterDataService } from '../../../core/services/master-data.service';
 import { TrainingEnrollmentService } from '../../../core/services/training-enrollment.service';
-import { TrainingRequestService } from '../../../core/services/training-request.service';
 import { TrainingService } from '../../../core/services/training.service';
 import { Training } from '../../../core/models/training';
 import { TrainingEnrollment } from '../../../core/models/training-enrollment';
-import { TrainingRequest } from '../../../core/models/training-request';
 import { TrainingDetail } from './training-detail';
 
 function makeTraining(overrides: Partial<Training> = {}): Training {
@@ -26,6 +24,7 @@ function makeTraining(overrides: Partial<Training> = {}): Training {
     audience_new_hires_only: false,
     requires_multistage_approval: false,
     approval_stage_count: null,
+    lessons_count: 0,
     lessons: [],
     ...overrides,
   };
@@ -35,7 +34,6 @@ describe('TrainingDetail', () => {
   function createComponent(options: {
     trainingServiceMock?: Partial<TrainingService>;
     enrollmentServiceMock?: Partial<TrainingEnrollmentService>;
-    requestServiceMock?: Partial<TrainingRequestService>;
     employeeServiceMock?: Partial<EmployeeService>;
     masterDataMock?: Partial<MasterDataService>;
     currentEmployeeId?: number;
@@ -52,10 +50,6 @@ describe('TrainingDetail', () => {
         {
           provide: TrainingEnrollmentService,
           useValue: { list: () => of([]), ...options.enrollmentServiceMock },
-        },
-        {
-          provide: TrainingRequestService,
-          useValue: { list: () => of([]), ...options.requestServiceMock },
         },
         {
           provide: EmployeeService,
@@ -96,29 +90,6 @@ describe('TrainingDetail', () => {
     };
   }
 
-  function makeRequest(overrides: Partial<TrainingRequest> = {}): TrainingRequest {
-    return {
-      id: 1,
-      employee_id: 10,
-      requested_by_employee_id: 10,
-      is_self_requested: true,
-      training: { id: 1 } as never,
-      status: 'pending',
-      reason: null,
-      due_at: null,
-      required_approval_stages: 1,
-      current_approval_stage: 1,
-      approval_history: [],
-      decided_by_employee_id: null,
-      decided_at: null,
-      decision_comment: null,
-      requested_at: '2026-06-01T00:00:00Z',
-      can_decide: false,
-      can_cancel: true,
-      ...overrides,
-    };
-  }
-
   describe('ngOnInit', () => {
     it('研修情報を読み込み、自分の受講記録が見つかればmyEnrollmentに設定する', () => {
       const fixture = createComponent({
@@ -139,90 +110,26 @@ describe('TrainingDetail', () => {
       expect(fixture.componentInstance.myEnrollment()).toBeNull();
     });
 
-    it('人事でなければ自分の申請を読み込む', () => {
-      const listSpy = vi.fn().mockReturnValue(of([makeRequest({ employee_id: 10, training: { id: 1 } as never })]));
-      const fixture = createComponent({ requestServiceMock: { list: listSpy }, isHr: false, currentEmployeeId: 10 });
-
-      expect(listSpy).toHaveBeenCalled();
-      expect(fixture.componentInstance.myRequest()?.employee_id).toBe(10);
-    });
-
-    it('人事の場合は自分の申請を読み込まず、従業員・部署一覧を読み込む', () => {
-      const requestListSpy = vi.fn().mockReturnValue(of([]));
+    it('人事の場合は従業員・部署一覧を読み込む', () => {
       const employeeListSpy = vi.fn().mockReturnValue(of([]));
       const departmentsSpy = vi.fn().mockReturnValue(of([]));
 
       createComponent({
-        requestServiceMock: { list: requestListSpy },
         employeeServiceMock: { list: employeeListSpy },
         masterDataMock: { departments: departmentsSpy },
         isHr: true,
       });
 
-      expect(requestListSpy).not.toHaveBeenCalled();
       expect(employeeListSpy).toHaveBeenCalled();
       expect(departmentsSpy).toHaveBeenCalled();
     });
-  });
 
-  describe('applyForTraining / cancelMyRequest', () => {
-    it('成功すると申請結果を保持し、フォームをリセットする', () => {
-      const create = vi.fn().mockReturnValue(of(makeRequest()));
-      const fixture = createComponent({ requestServiceMock: { create } });
+    it('人事でなければ従業員・部署一覧を読み込まない', () => {
+      const employeeListSpy = vi.fn().mockReturnValue(of([]));
 
-      fixture.componentInstance.applyForm.setValue({ reason: '理由', due_at: '2026-06-01' });
-      fixture.componentInstance.applyForTraining();
+      createComponent({ employeeServiceMock: { list: employeeListSpy }, isHr: false });
 
-      expect(create).toHaveBeenCalledWith(1, '理由', '2026-06-01');
-      expect(fixture.componentInstance.myRequest()).toEqual(makeRequest());
-      expect(fixture.componentInstance.applyForm.getRawValue()).toEqual({ reason: '', due_at: '' });
-    });
-
-    it('失敗するとエラーメッセージを表示する', () => {
-      const create = vi.fn().mockReturnValue(throwError(() => ({ error: { message: '既に申請済みです。' } })));
-      const fixture = createComponent({ requestServiceMock: { create } });
-
-      fixture.componentInstance.applyForTraining();
-
-      expect(fixture.componentInstance.applyError()).toBe('既に申請済みです。');
-    });
-
-    it('cancelMyRequestは申請が無ければ何もしない', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-      const cancel = vi.fn();
-      const fixture = createComponent({ requestServiceMock: { cancel } });
-
-      fixture.componentInstance.cancelMyRequest();
-
-      expect(cancel).not.toHaveBeenCalled();
-    });
-
-    it('cancelMyRequestは確認をキャンセルすると何もしない', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
-      const cancel = vi.fn();
-      const fixture = createComponent({
-        requestServiceMock: { list: () => of([makeRequest({ employee_id: 10 })]), cancel },
-        currentEmployeeId: 10,
-      });
-
-      fixture.componentInstance.cancelMyRequest();
-
-      expect(cancel).not.toHaveBeenCalled();
-    });
-
-    it('cancelMyRequestは確認後、取消結果でmyRequestを更新する', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-      const cancelled = makeRequest({ status: 'cancelled' });
-      const cancel = vi.fn().mockReturnValue(of(cancelled));
-      const fixture = createComponent({
-        requestServiceMock: { list: () => of([makeRequest({ id: 3, employee_id: 10 })]), cancel },
-        currentEmployeeId: 10,
-      });
-
-      fixture.componentInstance.cancelMyRequest();
-
-      expect(cancel).toHaveBeenCalledWith(3);
-      expect(fixture.componentInstance.myRequest()?.status).toBe('cancelled');
+      expect(employeeListSpy).not.toHaveBeenCalled();
     });
   });
 

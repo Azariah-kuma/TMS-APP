@@ -50,6 +50,20 @@ it('一般社員は他の従業員を異動させられない', function () {
     expect($employee->user->can('transfer', $someone))->toBeFalse();
 });
 
+it('人事は従業員の氏名を訂正できる', function () {
+    $hr = Employee::factory()->hr()->create();
+    $someone = Employee::factory()->create();
+
+    expect($hr->user->can('update', $someone))->toBeTrue();
+});
+
+it('一般社員は他の従業員の氏名を訂正できない', function () {
+    $employee = Employee::factory()->create();
+    $someone = Employee::factory()->create();
+
+    expect($employee->user->can('update', $someone))->toBeFalse();
+});
+
 it('人事は招待メールを再送信できる', function () {
     $hr = Employee::factory()->hr()->create();
     $someone = Employee::factory()->create();
@@ -62,4 +76,18 @@ it('一般社員は他人の招待メールを再送信できない', function (
     $someone = Employee::factory()->create();
 
     expect($employee->user->can('resendInvite', $someone))->toBeFalse();
+});
+
+it('人事は従業員を退職させられる', function () {
+    $hr = Employee::factory()->hr()->create();
+    $someone = Employee::factory()->create();
+
+    expect($hr->user->can('retire', $someone))->toBeTrue();
+});
+
+it('一般社員は他の従業員を退職させられない', function () {
+    $employee = Employee::factory()->create();
+    $someone = Employee::factory()->create();
+
+    expect($employee->user->can('retire', $someone))->toBeFalse();
 });

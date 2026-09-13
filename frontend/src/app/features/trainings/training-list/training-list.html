@@ -93,7 +93,7 @@
         <tr>
           <td><a [routerLink]="['/trainings', training.id]">{{ training.title }}</a></td>
           <td>{{ training.category || '—' }}</td>
-          <td>{{ training.lessons?.length ?? 0 }}</td>
+          <td>{{ training.lessons_count }}</td>
           @if (isHr()) {
             <td>{{ training.unit_cost !== null ? (training.unit_cost + '円') : '—' }}</td>
             <td>{{ audienceLabel(training) }}</td>

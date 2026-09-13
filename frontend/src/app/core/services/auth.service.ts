@@ -26,6 +26,10 @@ export class AuthService {
   readonly isAuthenticated = computed(() => this.user() !== null);
   readonly currentEmployee = computed(() => this.user()?.employee ?? null);
   readonly isHr = computed(() => this.currentEmployee()?.role === 'hr');
+  /** 全データの閲覧のみ許可される監査ロールか。作成・更新・削除の権限は無い。 */
+  readonly isAuditor = computed(() => this.currentEmployee()?.role === 'audit');
+  /** 人事・監査どちらか（管理系画面の「閲覧」自体は両方に許可する）。 */
+  readonly canViewAll = computed(() => this.isHr() || this.isAuditor());
 
   /** Fetches the CSRF cookie Sanctum needs before any state-changing request. */
   private csrfCookie(): Observable<void> {

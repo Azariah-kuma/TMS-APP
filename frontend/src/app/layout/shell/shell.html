@@ -4,7 +4,7 @@
     <a routerLink="/dashboard" routerLinkActive="is-active">ダッシュボード</a>
     <a routerLink="/trainings" routerLinkActive="is-active">研修</a>
     <a routerLink="/training-requests" routerLinkActive="is-active">申請</a>
-    @if (isHr()) {
+    @if (canViewAll()) {
       <a routerLink="/employees" routerLinkActive="is-active">従業員</a>
       <a routerLink="/departments" routerLinkActive="is-active">部署</a>
       <a routerLink="/positions" routerLinkActive="is-active">役職</a>
@@ -22,6 +22,9 @@
       }
       @if (e.role === 'hr') {
         <span class="badge badge-muted">人事</span>
+      }
+      @if (e.role === 'audit') {
+        <span class="badge badge-muted">監査</span>
       }
     }
     <button type="button" class="btn btn-small" (click)="logout()">ログアウト</button>

@@ -15,6 +15,7 @@ export class Shell {
   readonly user = this.auth.currentUser;
   readonly employee = this.auth.currentEmployee;
   readonly isHr = this.auth.isHr;
+  readonly canViewAll = this.auth.canViewAll;
 
   logout(): void {
     this.auth.logout().subscribe(() => this.router.navigateByUrl('/login'));

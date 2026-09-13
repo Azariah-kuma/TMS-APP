@@ -64,6 +64,18 @@ class Training extends Model
         return $this->hasMany(TrainingLesson::class)->orderBy('position');
     }
 
+    /**
+     * $actor がLesson教材の中身（添付ファイル等）を閲覧できるか。
+     *
+     * 研修そのものの閲覧可否（isVisibleTo）とは別に判定する。カタログで見えることと、
+     * 実際の教材（PDF・動画等）をダウンロードできることは同じではない。人事、または
+     * 実際にこの研修へ受講登録済みの本人のみ許可する（申請中・却下されただけでは不可）。
+     */
+    public function hasLessonContentAccessFor(Employee $actor): bool
+    {
+        return $actor->isHr() || $this->enrollments()->where('employee_id', $actor->id)->exists();
+    }
+
     /** 閲覧対象者を部署で絞り込んでいる場合の、その部署。 */
     public function audienceDepartment(): BelongsTo
     {
@@ -80,6 +92,9 @@ class Training extends Model
      * requires_multistage_approval（多段階承認が必要）な研修は、承認者になり得る
      * 管理職に事前に把握してもらう必要があるため、audience_managers_only の設定に
      * 関わらず常に管理職にも表示される。
+     *
+     * audience_new_hires_only（新入社員のみ対象）な研修も、本人だけでなく管理職には
+     * 常に表示される。部下（新入社員）への代理申請を行えるようにするため。
      */
     public function isVisibleTo(Employee $actor): bool
     {
@@ -92,7 +107,8 @@ class Training extends Model
             return true;
         }
 
-        if (($this->audience_managers_only || $this->requires_multistage_approval) && $actor->isManager()) {
+        if (($this->audience_managers_only || $this->requires_multistage_approval || $this->audience_new_hires_only)
+            && $actor->isManager()) {
             return true;
         }
 
@@ -120,7 +136,7 @@ class Training extends Model
     #[Scope]
     protected function visibleTo(Builder $query, Employee $actor): void
     {
-        if ($actor->isHr()) {
+        if ($actor->isHr() || $actor->isAuditor()) {
             return;
         }
 
@@ -143,6 +159,8 @@ class Training extends Model
             if ($isManager) {
                 $q->orWhere('audience_managers_only', true);
                 $q->orWhere('requires_multistage_approval', true);
+                // 部下（新入社員）への代理申請を行えるよう、管理職には新入社員向け研修も表示する。
+                $q->orWhere('audience_new_hires_only', true);
             }
 
             if ($isNewHire) {

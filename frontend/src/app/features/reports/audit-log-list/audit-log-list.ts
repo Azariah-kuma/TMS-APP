@@ -21,6 +21,18 @@ const ACTION_LABELS: Record<AuditLogAction, string> = {
   deleted: '削除',
 };
 
+/** auditable_type（モデルの短縮クラス名）の日本語表示名。 */
+const AUDITABLE_TYPE_LABELS: Record<(typeof AUDITABLE_TYPES)[number], string> = {
+  Department: '部署',
+  Position: '役職',
+  Employee: '従業員',
+  Training: '研修',
+  TrainingLesson: '研修レッスン',
+  TrainingRequest: '研修申請',
+  TrainingEnrollment: '受講記録',
+  DepartmentBudget: '部署予算',
+};
+
 @Component({
   selector: 'app-audit-log-list',
   imports: [DatePipe],
@@ -54,5 +66,10 @@ export class AuditLogList implements OnInit {
 
   actionLabel(log: AuditLog): string {
     return ACTION_LABELS[log.action];
+  }
+
+  /** auditable_type（英語のクラス名）を日本語表示名に変換する。未知の型はそのまま表示する。 */
+  auditableTypeLabel(type: string): string {
+    return (AUDITABLE_TYPE_LABELS as Record<string, string>)[type] ?? type;
   }
 }

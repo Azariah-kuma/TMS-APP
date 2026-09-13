@@ -36,6 +36,7 @@ final class TrainingResource extends JsonResource
             'audience_new_hires_only' => $this->audience_new_hires_only,
             'requires_multistage_approval' => $this->requires_multistage_approval,
             'approval_stage_count' => $this->approval_stage_count,
+            'lessons_count' => $this->lessons_count,
             'lessons' => TrainingLessonResource::collection($this->whenLoaded('lessons')),
         ];
     }

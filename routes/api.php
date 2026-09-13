@@ -47,9 +47,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // ログイン中の従業員の部下一覧（{employee}より前に登録する必要がある）
     Route::get('/employees/subordinates', [EmployeeController::class, 'subordinates']);
     Route::get('/employees/{employee}', [EmployeeController::class, 'show']);
+    // 婚姻等による姓の変更など、氏名・フリガナの訂正
+    Route::patch('/employees/{employee}', [EmployeeController::class, 'update']);
     // 招待メールの再送信は、HR権限があれば無制限に連打できてしまわないよう別途レート制限する
     Route::post('/employees/{employee}/resend-invite', [EmployeeController::class, 'resendInvite'])
         ->middleware('throttle:6,1');
+    // 退職登録（退職日を記録し、現在の配属があれば同日付で終了させる）
+    Route::post('/employees/{employee}/retire', [EmployeeController::class, 'retire']);
 
     // 部署・役職・上司の異動履歴
     Route::get('/employees/{employee}/assignments', [EmployeeAssignmentController::class, 'index']);

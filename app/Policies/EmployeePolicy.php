@@ -42,6 +42,18 @@ final class EmployeePolicy
         return false;
     }
 
+    /** 氏名等の訂正（婚姻等による姓の変更など）は人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */
+    public function update(User $user, Employee $employee): bool
+    {
+        return false;
+    }
+
+    /** 退職登録は人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */
+    public function retire(User $user, Employee $employee): bool
+    {
+        return false;
+    }
+
     /** 招待メールの再送信は人事のみ（HRの許可自体はGate::beforeで一元的に処理される）。 */
     public function resendInvite(User $user, Employee $employee): bool
     {

@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Enums\EmployeeRole;
 use App\Models\Department;
 use App\Models\Training;
+use App\Models\TrainingEnrollment;
+use App\Models\TrainingLesson;
 use Laravel\Sanctum\Sanctum;
 
 it('人事は研修を新規作成できる', function () {
@@ -42,6 +44,59 @@ it('ログイン済みの従業員なら誰でも研修の詳細を閲覧でき�
     Sanctum::actingAs($employee->user);
 
     $this->getJson("/api/trainings/{$training->id}")->assertOk()->assertJsonPath('id', $training->id);
+});
+
+it('研修一覧はLesson教材の中身（添付ファイル等）を返さず、件数のみ返す', function () {
+    $employee = createEmployeeWithAssignment();
+    $training = Training::factory()->create();
+    TrainingLesson::factory()->for($training)->count(2)->create();
+
+    Sanctum::actingAs($employee->user);
+
+    $response = $this->getJson('/api/trainings')->assertOk();
+
+    $response->assertJsonPath('0.lessons_count', 2)
+        ->assertJsonMissingPath('0.lessons');
+});
+
+it('人事は受講登録していなくても研修詳細でLesson教材の中身まで見られる', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $training = Training::factory()->create();
+    TrainingLesson::factory()->for($training)->count(2)->create();
+
+    Sanctum::actingAs($hr->user);
+
+    $this->getJson("/api/trainings/{$training->id}")
+        ->assertOk()
+        ->assertJsonPath('lessons_count', 2)
+        ->assertJsonCount(2, 'lessons');
+});
+
+it('受講登録済みの本人は研修詳細でLesson教材の中身まで見られる', function () {
+    $employee = createEmployeeWithAssignment();
+    $training = Training::factory()->create();
+    TrainingLesson::factory()->for($training)->count(2)->create();
+    TrainingEnrollment::factory()->create(['employee_id' => $employee->id, 'training_id' => $training->id]);
+
+    Sanctum::actingAs($employee->user);
+
+    $this->getJson("/api/trainings/{$training->id}")
+        ->assertOk()
+        ->assertJsonPath('lessons_count', 2)
+        ->assertJsonCount(2, 'lessons');
+});
+
+it('受講登録していない従業員は、研修が見えてもLesson教材の中身までは見られない', function () {
+    $employee = createEmployeeWithAssignment();
+    $training = Training::factory()->create();
+    TrainingLesson::factory()->for($training)->count(2)->create();
+
+    Sanctum::actingAs($employee->user);
+
+    $this->getJson("/api/trainings/{$training->id}")
+        ->assertOk()
+        ->assertJsonPath('lessons_count', 2)
+        ->assertJsonMissingPath('lessons');
 });
 
 it('人事は研修情報を更新できる', function () {
@@ -212,6 +267,17 @@ it('新入社員向けの研修は今年度入社の従業員の一覧にのみ�
 
     Sanctum::actingAs($veteran->user);
     $this->getJson('/api/trainings')->assertOk()->assertJsonCount(0);
+});
+
+it('新入社員向けの研修は、部下への代理申請ができるよう管理職の一覧・詳細にも表示される', function () {
+    $training = Training::factory()->create(['audience_new_hires_only' => true, 'title' => '新入社員向け研修']);
+    $manager = createEmployeeWithAssignment(['hired_at' => now()->subYears(5)]);
+    createEmployeeWithAssignment([], ['manager_id' => $manager->id]);
+
+    Sanctum::actingAs($manager->user);
+
+    $this->getJson('/api/trainings')->assertOk()->assertJsonCount(1);
+    $this->getJson("/api/trainings/{$training->id}")->assertOk();
 });
 
 it('人事は対象者の制限に関わらず全ての研修を一覧で閲覧できる', function () {

@@ -70,6 +70,7 @@
     <select id="role" class="input" formControlName="role">
       <option value="employee">一般社員</option>
       <option value="hr">人事</option>
+      <option value="audit">監査</option>
     </select>
   </div>
 
@@ -81,7 +82,7 @@
   <div class="field">
     <label for="department_id">部署</label>
     <select id="department_id" class="input" formControlName="department_id">
-      <option [value]="0">選択してください</option>
+      <option [value]="0">指定なし（外部監査等）</option>
       @for (department of departments(); track department.id) {
         <option [value]="department.id">{{ department.name }}</option>
       }
@@ -91,11 +92,12 @@
   <div class="field">
     <label for="position_id">役職</label>
     <select id="position_id" class="input" formControlName="position_id">
-      <option [value]="0">選択してください</option>
+      <option [value]="0">指定なし（外部監査等）</option>
       @for (position of positions(); track position.id) {
         <option [value]="position.id">{{ position.name }}</option>
       }
     </select>
+    <p class="field-hint">部署・役職は両方指定するか、両方「指定なし」にしてください（外部監査等、社内の部署に属さない従業員向け）。</p>
   </div>
 
   <div class="field">

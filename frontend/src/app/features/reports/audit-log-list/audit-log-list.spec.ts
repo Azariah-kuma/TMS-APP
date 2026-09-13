@@ -61,4 +61,17 @@ describe('AuditLogList', () => {
     expect(fixture.componentInstance.actionLabel(makeLog({ action: 'updated' }))).toBe('更新');
     expect(fixture.componentInstance.actionLabel(makeLog({ action: 'deleted' }))).toBe('削除');
   });
+
+  it('auditableTypeLabelは対象モデルの英語クラス名を日本語に変換する', () => {
+    const fixture = createComponent({ list: () => of(makePage()) });
+
+    expect(fixture.componentInstance.auditableTypeLabel('Department')).toBe('部署');
+    expect(fixture.componentInstance.auditableTypeLabel('TrainingEnrollment')).toBe('受講記録');
+  });
+
+  it('auditableTypeLabelは未知の型はそのまま返す', () => {
+    const fixture = createComponent({ list: () => of(makePage()) });
+
+    expect(fixture.componentInstance.auditableTypeLabel('Unknown')).toBe('Unknown');
+  });
 });

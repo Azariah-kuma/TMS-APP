@@ -9,6 +9,9 @@ import { Employee } from '../../../core/models/employee';
 import { toKatakana } from '../../../core/utils/kana';
 import { isFieldInvalid, toId } from '../../../core/utils/forms';
 
+/** 部署・役職セレクトの「指定なし（外部監査等）」を表す特別な値。実際のDepartment/Positionのidと衝突しない0を使う。 */
+const NO_ASSIGNMENT_VALUE = 0;
+
 @Component({
   selector: 'app-employee-onboard',
   imports: [ReactiveFormsModule],
@@ -37,8 +40,8 @@ export class EmployeeOnboard implements OnInit {
     employee_code: ['', Validators.required],
     role: ['employee', Validators.required],
     hired_at: ['', Validators.required],
-    department_id: [0, Validators.required],
-    position_id: [0, Validators.required],
+    department_id: [0],
+    position_id: [0],
     manager_id: [''],
   });
 
@@ -79,13 +82,15 @@ export class EmployeeOnboard implements OnInit {
     this.error.set(null);
 
     const raw = this.form.getRawValue();
+    const departmentId = toId(raw.department_id);
+    const positionId = toId(raw.position_id);
 
     this.employeeService
       .onboard({
         ...raw,
-        role: raw.role as 'employee' | 'hr',
-        department_id: toId(raw.department_id),
-        position_id: toId(raw.position_id),
+        role: raw.role as 'employee' | 'hr' | 'audit',
+        department_id: departmentId === NO_ASSIGNMENT_VALUE ? null : departmentId,
+        position_id: positionId === NO_ASSIGNMENT_VALUE ? null : positionId,
         manager_id: raw.manager_id ? toId(raw.manager_id) : null,
       })
       .subscribe({

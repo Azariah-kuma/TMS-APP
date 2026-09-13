@@ -36,6 +36,7 @@ final class BulkImportEmployeesAction
     private const ROLE_LABELS = [
         '一般社員' => EmployeeRole::Employee,
         '人事' => EmployeeRole::Hr,
+        '監査' => EmployeeRole::Audit,
     ];
 
     public function __construct(
@@ -108,8 +109,8 @@ final class BulkImportEmployeesAction
             'manager_id' => $managerId,
         ], (new StoreEmployeeRequest)->rules(), array_merge((new StoreEmployeeRequest)->messages(), [
             'role.required' => 'ロールは「一般社員」または「人事」を指定してください。',
-            'department_id.required' => "部署コード「{$row['department_code']}」が見つかりません。",
-            'position_id.required' => "役職コード「{$row['position_code']}」が見つかりません。",
+            'department_id.required_with' => "部署コード「{$row['department_code']}」が見つかりません。",
+            'position_id.required_with' => "役職コード「{$row['position_code']}」が見つかりません。",
             'manager_id.integer' => "上司の従業員コード「{$row['manager_employee_code']}」が見つかりません。",
         ]))->validate();
 

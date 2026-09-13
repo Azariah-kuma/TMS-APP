@@ -21,13 +21,20 @@ function makeEnrollment(employeeId: number): TrainingEnrollment {
 }
 
 describe('EnrollmentList', () => {
-  function createComponent(enrollments: TrainingEnrollment[], currentEmployeeId: number) {
+  function createComponent(
+    enrollments: TrainingEnrollment[],
+    currentEmployeeId: number,
+    isHr = false,
+  ) {
     TestBed.configureTestingModule({
       imports: [EnrollmentList],
       providers: [
         provideRouter([]),
         { provide: TrainingEnrollmentService, useValue: { list: () => of(enrollments) } },
-        { provide: AuthService, useValue: { currentEmployee: () => ({ id: currentEmployeeId }) } },
+        {
+          provide: AuthService,
+          useValue: { currentEmployee: () => ({ id: currentEmployeeId }), isHr: () => isHr },
+        },
       ],
     });
 
@@ -42,13 +49,21 @@ describe('EnrollmentList', () => {
     expect(fixture.componentInstance.loading()).toBe(false);
   });
 
-  it('自分自身の受講記録のみの場合、対象者列は表示しない', () => {
+  it('自分自身の受講記録のみの場合、分割表示にはしない', () => {
     const fixture = createComponent([makeEnrollment(1)], 1);
-    expect(fixture.componentInstance.showEmployeeColumn()).toBe(false);
+    expect(fixture.componentInstance.showSplitView()).toBe(false);
   });
 
-  it('自分以外の受講記録が含まれる場合、対象者列を表示する', () => {
+  it('上長として部下の受講記録が含まれる場合、自身/部下に分けて表示する', () => {
     const fixture = createComponent([makeEnrollment(1), makeEnrollment(2)], 1);
-    expect(fixture.componentInstance.showEmployeeColumn()).toBe(true);
+
+    expect(fixture.componentInstance.showSplitView()).toBe(true);
+    expect(fixture.componentInstance.myEnrollments().map((e) => e.employee_id)).toEqual([1]);
+    expect(fixture.componentInstance.subordinateEnrollments().map((e) => e.employee_id)).toEqual([2]);
+  });
+
+  it('人事の場合は部下に限らず全社員が対象のため、分割表示にはしない', () => {
+    const fixture = createComponent([makeEnrollment(1), makeEnrollment(2)], 1, true);
+    expect(fixture.componentInstance.showSplitView()).toBe(false);
   });
 });

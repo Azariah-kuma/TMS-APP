@@ -97,6 +97,32 @@ it('人事は全従業員の一覧を閲覧できる', function () {
     $this->getJson('/api/employees')->assertOk();
 });
 
+it('退職済みの従業員は既定では一覧に含まれない', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $active = createEmployeeWithAssignment();
+    $retired = createEmployeeWithAssignment(['retired_at' => '2026-01-01']);
+
+    Sanctum::actingAs($hr->user);
+
+    $response = $this->getJson('/api/employees')->assertOk();
+    $ids = collect($response->json())->pluck('id');
+
+    expect($ids)->toContain($active->id)
+        ->and($ids)->not->toContain($retired->id);
+});
+
+it('with_retired=1を指定すると退職済みの従業員も一覧に含まれる', function () {
+    $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
+    $retired = createEmployeeWithAssignment(['retired_at' => '2026-01-01']);
+
+    Sanctum::actingAs($hr->user);
+
+    $response = $this->getJson('/api/employees?with_retired=1')->assertOk();
+    $ids = collect($response->json())->pluck('id');
+
+    expect($ids)->toContain($retired->id);
+});
+
 it('一覧に各従業員の現在の部署名・役職名が含まれる', function () {
     $hr = createEmployeeWithAssignment(['role' => EmployeeRole::Hr]);
     $department = Department::factory()->create(['name' => '開発部']);

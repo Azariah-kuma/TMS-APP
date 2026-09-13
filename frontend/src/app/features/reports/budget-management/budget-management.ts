@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AuthService } from '../../../core/services/auth.service';
 import { DepartmentBudgetService } from '../../../core/services/department-budget.service';
 import { ReportService } from '../../../core/services/report.service';
 import { BudgetUsageRow } from '../../../core/models/department-budget';
@@ -14,7 +15,9 @@ export class BudgetManagement implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly departmentBudgets = inject(DepartmentBudgetService);
   private readonly reportService = inject(ReportService);
+  private readonly auth = inject(AuthService);
 
+  readonly isHr = this.auth.isHr;
   readonly fiscalYear = signal(currentFiscalYear());
   readonly rows = signal<BudgetUsageRow[]>([]);
   readonly loading = signal(true);
