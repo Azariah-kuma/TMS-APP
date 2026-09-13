@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\Training;
 use App\Models\TrainingEnrollment;
 use App\Notifications\TrainingEnrollmentCreatedNotification;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -40,6 +41,26 @@ it('受講登録が作られると、本人に受講可能になった旨のメ�
             $mail = $notification->toMail($employee->user);
 
             return str_contains($mail->subject, $training->title);
+        },
+    );
+});
+
+it('受講期限がある場合、メール本文に期限が含まれる', function () {
+    Notification::fake();
+
+    $employee = Employee::factory()->create();
+    $training = Training::factory()->create();
+    $dueAt = Carbon::parse('2026-12-31');
+
+    (new EnrollEmployeeInTrainingAction)->execute($employee, $training, $dueAt);
+
+    Notification::assertSentTo(
+        $employee->user,
+        TrainingEnrollmentCreatedNotification::class,
+        function (TrainingEnrollmentCreatedNotification $notification) use ($employee) {
+            $mail = $notification->toMail($employee->user);
+
+            return collect($mail->introLines)->contains(fn (string $line) => str_contains($line, '2026-12-31'));
         },
     );
 });
